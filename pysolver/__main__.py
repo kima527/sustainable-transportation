@@ -5,10 +5,21 @@ import click
 import routingblocks as rb
 import routingblocks_bais_as as rb_ext
 
+from pysolver.construction.savings import savings
+from pysolver.construction.insertion import sequential_best_insertion
 from pysolver.construction.random import generate_random_solution
 from pysolver.instance.interface import create_cpp_instance
 from pysolver.instance.parsing import parse_instance
 from pysolver.utils.plot import draw_routes
+
+
+def print_solution_info(name: str, solution: rb.Solution):
+    print(f"{name} | obj: {solution.cost} | feasible: {solution.feasible}")
+
+
+def print_vt_id_and_routes(evaluation: rb_ext.CVRPEvaluation, solution: rb.Solution):
+    for i, route in enumerate(solution.routes):
+        print(f"vt_{evaluation.compute_best_vehicle_id_of_route(route)}:", route)
 
 
 @click.command('pysolver')
@@ -29,6 +40,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
 
     py_instance = parse_instance(instance_path)
     instance = create_cpp_instance(py_instance)
+    cpp_instance = create_cpp_instance(py_instance)
 
     evaluation = rb_ext.CVRPEvaluation(py_instance.parameters.capacity)
 
@@ -37,8 +49,13 @@ def main(instance_path: Path, output_path: Path, seed: int):
     print(solution, solution.feasible)
 
     # 1. create solution (savings)
+    # savings_solution = savings(py_instance, evaluation, cpp_instance)
+    # print_solution_info("Savings", savings_solution)
+    # print_vt_id_and_routes(evaluation, savings_solution)
 
     # 2. create solution (insertion)
+    insertion_solution = sequential_best_insertion(py_instance, evaluation, cpp_instance)
+    print_solution_info("Insertion", insertion_solution)
 
     # 3. improve solution (LS)
 
@@ -53,7 +70,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # 8. adapting routingblocks
 
     # draw something with colors
-    draw_routes(py_instance, [[v.vertex_id for v in route] for route in solution])
+    draw_routes(py_instance, [[v.vertex_id for v in route] for route in insertion_solution])
 
 
 if __name__ == '__main__':
