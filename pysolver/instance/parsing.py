@@ -3,7 +3,7 @@ from math import sqrt
 from pathlib import Path
 from typing import Callable
 
-from pysolver.instance.models import Vertex, Parameters, ArcID, Arc, Instance, VertexType
+from .models import Vertex, Parameters, ArcID, Arc, Instance, VertexType
 
 
 def create_arc_matrix(parameters: Parameters, vertices: list[Vertex],
@@ -22,37 +22,51 @@ def euclidean(u: Vertex, v: Vertex) -> float:
 
 
 def parse_instance(instance_path: Path) -> Instance:
-    vertices: list[Vertex] = []
-    with open(instance_path) as instance_stream:
-        lines = instance_stream.read().splitlines()
-        # DIMENSION: 32
-        n = int(lines[3].rsplit(":")[1])
-        # CAPACITY: 100
-        capacity = int(lines[5].rsplit(":")[1])
-        # coordinates start at 7
-        # demands at n + 8
+    with open(instance_path) as f:
+        lines = [line.strip() for line in f if line.strip()]
 
-        for k in range(0, n):
-            (name, x, y) = list(map(int, lines[k + 7].split()))
-            demand = int(lines[k + n + 8].split()[1])
+    # === Header values ===
+    dimension = int(next(l for l in lines if l.startswith("DIMENSION")).split(":")[1])
+    capacity = int(next(l for l in lines if l.startswith("CAPACITY")).split(":")[1])
 
-            vertex = Vertex(
-                vertex_id=k,
-                vertex_name=str(k),
-                vertex_type=VertexType.Depot if k == 0 else VertexType.Customer,
-                x_coord=x,
-                y_coord=y,
-                demand=demand,
-            )
+    # === Section indices ===
+    coord_start = lines.index("NODE_COORD_SECTION") + 1
+    demand_start = lines.index("DEMAND_SECTION")
+    depot_start = lines.index("DEPOT_SECTION")
 
-            # vertices[vertex.vertex_id] = vertex
-            vertices.append(vertex)
+    # === 1. Parse Coordinates ===
+    coord_lines = lines[coord_start:demand_start]
+    vertices = []
+    for line in coord_lines:
+        tokens = line.split()
+        if len(tokens) < 3:
+            raise ValueError(f"Expected 3 columns (id, x, y), got: {line}")
+        vertex_id = int(tokens[0]) - 1  # convert 1-based to 0-based
+        x = float(tokens[1])
+        y = float(tokens[2])
+        vertex_type = VertexType.Depot if vertex_id == 0 else VertexType.Customer
+        vertices.append(Vertex(
+            vertex_id=vertex_id,
+            vertex_name=str(vertex_id),
+            vertex_type=vertex_type,
+            x_coord=x,
+            y_coord=y,
+            demand=0  # Will be filled next
+        ))
 
-        # parameters = Parameters(capacity=capacity, fleet_size=sum(1 for x in vertices.values() if x.is_customer))
-        parameters = Parameters(capacity=capacity, fleet_size=sum(1 for x in vertices if x.is_customer))
+    # === 2. Parse Demands ===
+    demand_lines = lines[demand_start + 1:depot_start]
+    for line in demand_lines:
+        tokens = line.split()
+        vertex_id = int(tokens[0]) - 1
+        demand = int(tokens[1])
+        vertices[vertex_id].demand = demand
 
-        # Create Arcs
-        arcs = create_arc_matrix(parameters=parameters, vertices=vertices,
-                                 distance_fn=euclidean)
+    # === 3. Parameters ===
+    parameters = Parameters(capacity=capacity, fleet_size=sum(1 for v in vertices if v.is_customer))
 
-        return Instance(parameters=parameters, vertices=vertices, arcs=arcs)
+    # === 4. Arcs ===
+    arcs = create_arc_matrix(parameters=parameters, vertices=vertices, distance_fn=euclidean)
+
+    return Instance(parameters=parameters, vertices=vertices, arcs=arcs)
+

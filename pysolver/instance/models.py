@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from typing import Iterable, Tuple, Dict
 from enum import Enum
 from itertools import product
+from datetime import timedelta
+
 
 from pydantic import root_validator, field_validator, model_validator
 
@@ -54,6 +56,7 @@ class Vertex:
 @dataclass
 class Arc:
     distance: float
+    duration: timedelta
 
     @field_validator('*')
     def check_nonzero_members(cls, value):
@@ -63,7 +66,7 @@ class Arc:
 
     @property
     def cost(self) -> float:
-        return self.distance
+        return self.duration.total_seconds()
 
 
 @dataclass
