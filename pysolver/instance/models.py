@@ -56,7 +56,7 @@ class Vertex:
 @dataclass
 class Arc:
     distance: float
-    duration: timedelta
+    # duration: timedelta
 
     @field_validator('*')
     def check_nonzero_members(cls, value):
@@ -66,7 +66,7 @@ class Arc:
 
     @property
     def cost(self) -> float:
-        return self.duration.total_seconds()
+        return self.distance
 
 
 @dataclass

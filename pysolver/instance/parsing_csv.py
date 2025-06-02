@@ -29,8 +29,8 @@ def parse_nodes_file(path: Path) -> list[Vertex]:
 
     return vertices
 
-def parse_duration(s: str) -> timedelta:
-    return datetime.strptime(s.strip(), "%H:%M:%S") - datetime(1900, 1, 1)
+# def parse_duration(s: str) -> timedelta:
+#     return datetime.strptime(s.strip(), "%H:%M:%S") - datetime(1900, 1, 1)
 
 
 def parse_routes_file(path: Path, vertices: list[Vertex]) -> Dict[Tuple[int, int], Arc]:
@@ -42,15 +42,15 @@ def parse_routes_file(path: Path, vertices: list[Vertex]) -> Dict[Tuple[int, int
             from_id = name_to_id[row['From'].strip()]
             to_id = name_to_id[row['To'].strip()]
             distance = float(row['DistanceTotal[km]'])
-            duration = parse_duration(row['Duration[s]'])
+            # duration = parse_duration(row['Duration[s]'])
 
-            arcs[(from_id, to_id)] = Arc(distance=distance, duration=duration)
+            arcs[(from_id, to_id)] = Arc(distance=distance)
 
     # Ensure all self-loops exist with 0-cost if missing
     for v in vertices:
         key = (v.vertex_id, v.vertex_id)
         if key not in arcs:
-            arcs[key] = Arc(distance=0.0, duration=timedelta(seconds=0))
+            arcs[key] = Arc(distance=0.0)
 
     return arcs
 
