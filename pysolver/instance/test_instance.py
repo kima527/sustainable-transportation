@@ -32,6 +32,6 @@ print(f"Successfully created C++ instance with {cpp_instance.number_of_vertices}
 save_instance_as_vrp(
     instance=py_instance,
     output_path=Path("resources/instances/test_instances/newyork_manhattan.vrp"),
-    name="NEW YORK STATE",
+    name="NEW YORK MANHATTAN",
     comment="Exported from .nodes/.routes"
 )
