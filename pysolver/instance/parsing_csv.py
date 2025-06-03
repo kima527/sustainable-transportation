@@ -34,15 +34,23 @@ def parse_nodes_file(path: Path) -> list[Vertex]:
 
 
 def parse_routes_file(path: Path, vertices: list[Vertex]) -> Dict[Tuple[int, int], Arc]:
-    name_to_id = {v.vertex_name: v.vertex_id for v in vertices}
     arcs = {}
     with open(path, newline='') as f:
         reader = csv.DictReader(f, delimiter=' ')
         for row in reader:
-            from_id = name_to_id[row['From'].strip()]
-            to_id = name_to_id[row['To'].strip()]
+            from_name = row['From'].strip()
+            to_name = row['To'].strip()
+
+            # Convert "D0" -> 0, "C1" -> 1, "C12" -> 12, etc.
+            def name_to_id(name: str) -> int:
+                if name.startswith("D") or name.startswith("C"):
+                    return int(name[1:])
+                else:
+                    raise ValueError(f"Unknown vertex name format: {name}")
+
+            from_id = name_to_id(from_name)
+            to_id = name_to_id(to_name)
             distance = float(row['DistanceTotal[km]'])
-            # duration = parse_duration(row['Duration[s]'])
 
             arcs[(from_id, to_id)] = Arc(distance=distance)
 

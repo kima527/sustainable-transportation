@@ -4,6 +4,7 @@ import random
 import click
 import routingblocks as rb
 import routingblocks_bais_as as rb_ext
+import folium
 
 from pysolver.construction.savings import savings
 from pysolver.construction.insertion import sequential_best_insertion
@@ -11,6 +12,8 @@ from pysolver.construction.random import generate_random_solution
 from pysolver.instance.interface import create_cpp_instance
 from pysolver.instance.parsing import parse_instance
 from pysolver.utils.plot import draw_routes
+from pysolver.utils.plot_map import draw_routes_on_map
+
 from pysolver.metaheuristic import lns
 
 
@@ -46,8 +49,8 @@ def main(instance_path: Path, output_path: Path, seed: int):
     evaluation = rb_ext.CVRPEvaluation(py_instance.parameters.capacity)
 
     # 0. check routingblocks working properly
-    solution = generate_random_solution(py_instance, evaluation, instance)
-    print(solution, solution.feasible)
+    # solution = generate_random_solution(py_instance, evaluation, instance)
+    # print(solution, solution.feasible)
 
     # 1. create solution (savings)
     # savings_solution = savings(py_instance, evaluation, cpp_instance)
@@ -75,6 +78,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
 
     # draw something with colors
     draw_routes(py_instance, [[v.vertex_id for v in route] for route in lns_insertion_solution])
+    draw_routes_on_map(py_instance, [[v.vertex_id for v in route] for route in lns_insertion_solution])
 
 
 if __name__ == '__main__':

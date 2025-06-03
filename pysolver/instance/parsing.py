@@ -2,6 +2,7 @@ from itertools import product
 from math import sqrt
 from pathlib import Path
 from typing import Callable
+from .parsing_csv import parse_routes_file
 
 from .models import Vertex, Parameters, ArcID, Arc, Instance, VertexType
 
@@ -17,8 +18,8 @@ def create_arc_matrix(parameters: Parameters, vertices: list[Vertex],
     }
 
 
-def euclidean(u: Vertex, v: Vertex) -> float:
-    return sqrt((u.x_coord - v.x_coord) ** 2 + (u.y_coord - v.y_coord) ** 2)
+# def euclidean(u: Vertex, v: Vertex) -> float:
+#     return sqrt((u.x_coord - v.x_coord) ** 2 + (u.y_coord - v.y_coord) ** 2)
 
 
 def parse_instance(instance_path: Path) -> Instance:
@@ -66,7 +67,9 @@ def parse_instance(instance_path: Path) -> Instance:
     parameters = Parameters(capacity=capacity, fleet_size=sum(1 for v in vertices if v.is_customer))
 
     # === 4. Arcs ===
-    arcs = create_arc_matrix(parameters=parameters, vertices=vertices, distance_fn=euclidean)
+    # arcs = create_arc_matrix(parameters=parameters, vertices=vertices, distance_fn=euclidean)
+
+    arcs = parse_routes_file(Path("resources/data/Paris.routes"), vertices)
 
     return Instance(parameters=parameters, vertices=vertices, arcs=arcs)
 

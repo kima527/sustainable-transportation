@@ -35,3 +35,5 @@ Run the following commands in the terminal in the root folder of this project:
 - `python -m pysolver ./resources/instances/Augerat/A-n32-k5.vrp` (run solver)
 
 
+# Link to excel solver documentation
+https://www.sciencedirect.com/science/article/pii/S0305054817300552
