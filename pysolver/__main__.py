@@ -11,15 +11,16 @@ from pysolver.construction.random import generate_random_solution
 from pysolver.instance.interface import create_cpp_instance
 from pysolver.instance.parsing import parse_instance
 from pysolver.utils.plot import draw_routes
+from pysolver.metaheuristic import lns
 
 
 def print_solution_info(name: str, solution: rb.Solution):
     print(f"{name} | obj: {solution.cost} | feasible: {solution.feasible}")
 
 
-def print_vt_id_and_routes(evaluation: rb_ext.CVRPEvaluation, solution: rb.Solution):
-    for i, route in enumerate(solution.routes):
-        print(f"vt_{evaluation.compute_best_vehicle_id_of_route(route)}:", route)
+# def print_vt_id_and_routes(evaluation: rb_ext.CVRPEvaluation, solution: rb.Solution):
+#     for i, route in enumerate(solution.routes):
+#         print(f"vt_{evaluation.compute_best_vehicle_id_of_route(route)}:", route)
 
 
 @click.command('pysolver')
@@ -62,6 +63,9 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # 4. custom operator (LS)
 
     # 5. metaheuristic (LNS)
+    lns_insertion_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, insertion_solution, 200)
+    print_solution_info("LNS_Insertion", lns_insertion_solution)
+    # print_vt_id_and_routes(evaluation, lns_insertion_solution)
 
     # 6. metaheuristic (ALNS)
 
@@ -70,7 +74,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # 8. adapting routingblocks
 
     # draw something with colors
-    draw_routes(py_instance, [[v.vertex_id for v in route] for route in insertion_solution])
+    draw_routes(py_instance, [[v.vertex_id for v in route] for route in lns_insertion_solution])
 
 
 if __name__ == '__main__':
