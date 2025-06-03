@@ -59,8 +59,8 @@ def main(instance_path: Path, output_path: Path, seed: int):
     #print_vt_id_and_routes(evaluation, savings_solution)
 
     # 2. create solution (insertion)
-    #insertion_solution = sequential_best_insertion(py_instance, evaluation, cpp_instance)
-    #print_solution_info("Insertion", insertion_solution)
+    insertion_solution = sequential_best_insertion(py_instance, evaluation, cpp_instance)
+    print_solution_info("Insertion", insertion_solution)
 
     # 3. improve solution (LS)
     ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance,
@@ -71,7 +71,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # 4. custom operator (LS)
 
     # 5. metaheuristic (LNS)
-    lns_insertion_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 2000)
+    lns_insertion_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 500)
     print_solution_info("LNS_Insertion", lns_insertion_solution)
     # print_vt_id_and_routes(evaluation, lns_insertion_solution)
 

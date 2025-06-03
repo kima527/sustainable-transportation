@@ -25,7 +25,7 @@ def lns(py_instance: Instance, evaluation: rb.Evaluation, cpp_instance: rb.Insta
     current_solution = initial_solution
     for it in range(max_iterations):
         new_solution = current_solution.copy()
-        lns.generate(evaluation, new_solution, int(len(py_instance.vertices) * 0.2))
+        lns.generate(evaluation, new_solution, int(len(py_instance.vertices) * 0.25))
 
         if new_solution.cost < current_solution.cost:
             print(f"it {it}: new best solution found with {new_solution.cost}")
@@ -33,4 +33,17 @@ def lns(py_instance: Instance, evaluation: rb.Evaluation, cpp_instance: rb.Insta
         else:
             pass
 
+        missing = missing_customers(new_solution, len(py_instance.vertices))
+        if missing:
+            print(f"⚠️  Iteration {it}: Missing customers {missing}")
+
     return current_solution
+
+def missing_customers(solution: rb.Solution, num_customers: int) -> set[int]:
+    visited = set()
+    for route in solution:
+        for v in route:
+            visited.add(v.vertex_id)
+    expected = set(range(1, num_customers))  # assuming 0 = depot
+    return expected - visited
+

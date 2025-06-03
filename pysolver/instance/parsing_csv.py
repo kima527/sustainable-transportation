@@ -73,7 +73,7 @@ def parse_instance_from_csv(nodes_path: Path, routes_path: Path, capacity: float
     return Instance(parameters=parameters, vertices=vertices, arcs=arcs)
 
 
-def save_instance_as_vrp(instance, output_path: Path = "resources/instances/test_instances/paris.vrp", name: str = "PARIS", comment: str = ""):
+def save_instance_as_vrp(instance, output_path: Path = "resources/instances/test_instances/newyork_manhattan.vrp", name: str = "PARIS", comment: str = ""):
     with open(output_path, "w") as f:
         f.write(f"NAME : {name}\n")
         f.write("TYPE : CVRP\n")

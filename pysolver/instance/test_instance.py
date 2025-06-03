@@ -3,12 +3,12 @@ from .parsing_csv import parse_instance_from_csv, save_instance_as_vrp
 from .interface import create_cpp_instance
 
 # Define paths to your test files
-nodes_path = Path("resources/data/Shanghai.nodes")
-routes_path = Path("resources/data/Shanghai.routes")
+nodes_path = Path("resources/data/NewYorkManhattan.nodes")
+routes_path = Path("resources/data/NewYork.routes")
 
 # Define instance parameters
-capacity = 2800
-fleet_size = 19
+capacity = 883
+fleet_size = 12
 
 # Parse instance from your files
 py_instance = parse_instance_from_csv(
@@ -31,7 +31,7 @@ print(f"Successfully created C++ instance with {cpp_instance.number_of_vertices}
 
 save_instance_as_vrp(
     instance=py_instance,
-    output_path=Path("resources/instances/test_instances/shanghai.vrp"),
-    name="SHANGHAI",
+    output_path=Path("resources/instances/test_instances/newyork_manhattan.vrp"),
+    name="NEW YORK STATE",
     comment="Exported from .nodes/.routes"
 )

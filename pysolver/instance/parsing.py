@@ -69,7 +69,7 @@ def parse_instance(instance_path: Path) -> Instance:
     # === 4. Arcs ===
     # arcs = create_arc_matrix(parameters=parameters, vertices=vertices, distance_fn=euclidean)
 
-    arcs = parse_routes_file(Path("resources/data/Paris.routes"), vertices)
+    arcs = parse_routes_file(Path("resources/data/NewYork.routes"), vertices)
 
     return Instance(parameters=parameters, vertices=vertices, arcs=arcs)
 
