@@ -13,7 +13,7 @@ def savings(py_instance: Instance, evaluation: rb.Evaluation,
     for c_i in range(1, len(py_instance.vertices)):
         c_to_route_id.append(c_i - 1)
         routes[c_i - 1].insert_vertices_after([(c_i, 0)])
-        capacity.append(py_instance.vertices[c_i].demand_weight)
+        capacity.append(py_instance.vertices[c_i].demand)
 
     savings = list()
     for c_i in range(1, len(py_instance.vertices)):
@@ -40,8 +40,7 @@ def savings(py_instance: Instance, evaluation: rb.Evaluation,
 
         if route_id_of_c_i != route_id_of_c_j and len(r_i) > 2 and len(r_j) > 2 \
                 and r_i[len(r_i) - 2].vertex_id == c_i and r_j[1].vertex_id == c_j:
-            if capacity[route_id_of_c_i] + capacity[route_id_of_c_j] > py_instance.parameters.vehicle_types[
-                0].capacity_weight:
+            if capacity[route_id_of_c_i] + capacity[route_id_of_c_j] > py_instance.parameters.capacity:
                 pass
             else:
                 # merge
@@ -88,7 +87,7 @@ def py_savings(py_instance: Instance, evaluation: rb.Evaluation,
     for c_i in range(1, len(py_instance.vertices)):
         c_to_route_id.append(c_i - 1)
         py_routes.append([c_i])
-        capacity.append(py_instance.vertices[c_i].demand_weight)
+        capacity.append(py_instance.vertices[c_i].demand)
 
     savings = list()
     for c_i in range(1, len(py_instance.vertices)):
@@ -112,8 +111,7 @@ def py_savings(py_instance: Instance, evaluation: rb.Evaluation,
         if route_id_of_c_i != route_id_of_c_j and len(py_routes[route_id_of_c_i]) > 0 and len(
                 py_routes[route_id_of_c_j]) > 0 \
                 and py_routes[route_id_of_c_i][-1] == c_i and py_routes[route_id_of_c_j][0] == c_j:
-            if capacity[route_id_of_c_i] + capacity[route_id_of_c_j] > py_instance.parameters.vehicle_types[
-                0].capacity_weight:
+            if capacity[route_id_of_c_i] + capacity[route_id_of_c_j] > py_instance.parameters.capacity:
                 pass
             else:
                 # merge

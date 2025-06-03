@@ -9,6 +9,7 @@ import folium
 from pysolver.construction.savings import savings
 from pysolver.construction.insertion import sequential_best_insertion
 from pysolver.construction.random import generate_random_solution
+from pysolver.ls import CustomLocalSearch
 from pysolver.instance.interface import create_cpp_instance
 from pysolver.instance.parsing import parse_instance
 from pysolver.utils.plot import draw_routes
@@ -53,20 +54,24 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # print(solution, solution.feasible)
 
     # 1. create solution (savings)
-    # savings_solution = savings(py_instance, evaluation, cpp_instance)
-    # print_solution_info("Savings", savings_solution)
-    # print_vt_id_and_routes(evaluation, savings_solution)
+    savings_solution = savings(py_instance, evaluation, cpp_instance)
+    print_solution_info("Savings", savings_solution)
+    #print_vt_id_and_routes(evaluation, savings_solution)
 
     # 2. create solution (insertion)
-    insertion_solution = sequential_best_insertion(py_instance, evaluation, cpp_instance)
-    print_solution_info("Insertion", insertion_solution)
+    #insertion_solution = sequential_best_insertion(py_instance, evaluation, cpp_instance)
+    #print_solution_info("Insertion", insertion_solution)
 
     # 3. improve solution (LS)
+    ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance,
+                                  granularity=20)
+    ls_engine.improve(savings_solution)
+    print_solution_info("LocalSearch", savings_solution)
 
     # 4. custom operator (LS)
 
     # 5. metaheuristic (LNS)
-    lns_insertion_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, insertion_solution, 200)
+    lns_insertion_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 2000)
     print_solution_info("LNS_Insertion", lns_insertion_solution)
     # print_vt_id_and_routes(evaluation, lns_insertion_solution)
 
