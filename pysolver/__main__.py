@@ -64,14 +64,14 @@ def main(instance_path: Path, output_path: Path, seed: int):
 
     # 3. improve solution (LS)
     ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance,
-                                  granularity=20)
+                                  granularity=30)
     ls_engine.improve(savings_solution)
     print_solution_info("LocalSearch", savings_solution)
 
     # 4. custom operator (LS)
 
     # 5. metaheuristic (LNS)
-    lns_insertion_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 500)
+    lns_insertion_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 10000)
     print_solution_info("LNS_Insertion", lns_insertion_solution)
     # print_vt_id_and_routes(evaluation, lns_insertion_solution)
 
