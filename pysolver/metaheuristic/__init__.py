@@ -25,7 +25,7 @@ def lns(py_instance: Instance, evaluation: rb.Evaluation, cpp_instance: rb.Insta
     current_solution = initial_solution
     for it in range(max_iterations):
         new_solution = current_solution.copy()
-        lns.generate(evaluation, new_solution, int(len(py_instance.vertices) * 0.25))
+        lns.generate(evaluation, new_solution, int(len(py_instance.vertices) * 0.1))
 
         if new_solution.cost < current_solution.cost:
             print(f"it {it}: new best solution found with {new_solution.cost}")
