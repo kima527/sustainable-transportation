@@ -25,9 +25,12 @@ def draw_routes_on_map(instance: Instance, R: list[list[int]]):
     # Generate distinct colors for each route
     def get_color_palette(n):
         colors = [
-            "red", "blue", "green", "purple", "orange", "darkred", "lightred",
-            "beige", "darkblue", "darkgreen", "cadetblue", "darkpurple",
-            "pink", "lightblue", "lightgreen", "gray", "black"
+        "red", "blue", "green", "purple", "orange", "darkred", "#8B0000",
+      "#5C4033", "darkblue", "darkgreen", "cadetblue", "#4B0082",
+      "#800040", "#00008B", "#006400", "#2F4F4F", "black",
+      "#9932CC", "#8B4513", "#483D8B", "#556B2F", "#708090", 
+      "#191970", "#A52A2A", "#2E8B57", "#6B8E23", "#800000",
+      "#4682B4", "#B22222", "#1C1C1C"
         ]
         if n <= len(colors):
             return colors[:n]
