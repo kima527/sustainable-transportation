@@ -21,6 +21,15 @@ def create_arc_matrix(parameters: Parameters, vertices: list[Vertex],
 # def euclidean(u: Vertex, v: Vertex) -> float:
 #     return sqrt((u.x_coord - v.x_coord) ** 2 + (u.y_coord - v.y_coord) ** 2)
 
+def load_id_map(id_map_path: Path) -> dict[int, str]:
+    with open(id_map_path) as f:
+        lines = [line.strip() for line in f if line.strip()]
+    result = {}
+    for line in lines:
+        tokens = line.split()
+        result[int(tokens[0])] = tokens[1]
+    return result
+
 
 def parse_instance(instance_path: Path) -> Instance:
     with open(instance_path) as f:
@@ -35,6 +44,10 @@ def parse_instance(instance_path: Path) -> Instance:
     demand_start = lines.index("DEMAND_SECTION")
     depot_start = lines.index("DEPOT_SECTION")
 
+    # === Load id_map.txt ===
+    id_map_path = instance_path.parent / f"{instance_path.stem}.id_map.txt"
+    id_map = load_id_map(id_map_path)
+
     # === 1. Parse Coordinates ===
     coord_lines = lines[coord_start:demand_start]
     vertices = []
@@ -46,9 +59,13 @@ def parse_instance(instance_path: Path) -> Instance:
         x = float(tokens[1])
         y = float(tokens[2])
         vertex_type = VertexType.Depot if vertex_id == 0 else VertexType.Customer
+
+        # 🚨 FIX: use id_map to get correct vertex_name
+        vertex_name = id_map[int(tokens[0])]
+
         vertices.append(Vertex(
             vertex_id=vertex_id,
-            vertex_name=str(vertex_id),
+            vertex_name=vertex_name,
             vertex_type=vertex_type,
             x_coord=x,
             y_coord=y,
@@ -67,9 +84,7 @@ def parse_instance(instance_path: Path) -> Instance:
     parameters = Parameters(capacity=capacity, fleet_size=sum(1 for v in vertices if v.is_customer))
 
     # === 4. Arcs ===
-    # arcs = create_arc_matrix(parameters=parameters, vertices=vertices, distance_fn=euclidean)
     ROUTES_DIR = Path("resources/data")
-
     inferred_routes = ROUTES_DIR / f"{instance_path.stem}.routes"
     arcs = parse_routes_file(inferred_routes, vertices)
 

@@ -26,7 +26,6 @@ from typing import Callable, Any
 import routingblocks as rb
 import routingblocks_bais_as as rb_ext
 
-
 def create_cpp_vertex(vertex: Vertex, vertex_id: int, data_factory: Callable[[Vertex], Any]) -> rb_ext.Vertex:
     return rb_ext.create_cvrp_vertex(vertex.vertex_id, vertex.vertex_name, False, vertex_id == 0, data_factory(vertex))
 
@@ -42,19 +41,26 @@ def cvrp_vertex_data_factory(vertex: Vertex) -> rb_ext.CVRPVertexData:
 def cvrp_arc_data_factory(arc: Arc) -> rb_ext.CVRPArcData:
     return rb_ext.CVRPArcData(arc.distance)
 
-
 def create_cpp_instance(instance: Instance) -> rb_ext.Instance:
     vertex_data_factory = cvrp_vertex_data_factory
     arc_data_factory = cvrp_arc_data_factory
 
     # Convert vertices
     sorted_vertices = [instance.depot, *sorted(instance.customers, key=lambda v: v.vertex_id), *[]]
+
+    # 🚨 Correct — do NOT reload id_map.txt here!
+    # Build name_to_vertex_id from instance.vertices
+    name_to_vertex_id = {v.vertex_name: v.vertex_id for v in instance.vertices}
+
     cpp_vertices = [create_cpp_vertex(v, i, data_factory=vertex_data_factory) for i, v in enumerate(sorted_vertices)]
-    id_map = {cpp_v.vertex_id: v for v, cpp_v in zip(sorted_vertices, cpp_vertices)}
+
+    for v in sorted_vertices:
+        print(f"vertex_name = {v.vertex_name}, vertex_id = {v.vertex_id}")
 
     cpp_arcs = [
-        [create_cpp_arc(instance.arcs[id_map[i.vertex_id].vertex_id, id_map[j.vertex_id].vertex_id],
+        [create_cpp_arc(instance.arcs[name_to_vertex_id[i.vertex_name], name_to_vertex_id[j.vertex_name]],
                         data_factory=arc_data_factory)
-         for j in cpp_vertices] for i in cpp_vertices]
+         for j in sorted_vertices] for i in sorted_vertices]
 
     return rb.Instance(cpp_vertices, cpp_arcs, instance.parameters.fleet_size)
+
