@@ -21,6 +21,21 @@ from pysolver.metaheuristic import lns
 def print_solution_info(name: str, solution: rb.Solution):
     print(f"{name} | obj: {solution.cost} | feasible: {solution.feasible}")
 
+def route_distance(route, py_instance):
+    distance = 0
+    for i in range(len(route) - 1):
+        u = route[i].vertex_id
+        v = route[i + 1].vertex_id
+        distance += py_instance.arcs[(u, v)].distance  # or .cost if 'distance' doesn't exist
+    return distance
+
+def print_route_summary(evaluation: rb.Evaluation, solution: rb.Solution, py_instance):
+    print(f"Vehicles / routes used: {len(solution)}")
+    for r_id, route in enumerate(solution.routes, start=1):
+        n_customers = len(route) - 2
+        dist = route_distance(route, py_instance)
+        print(f"  Route {r_id:<2}:  customers = {n_customers:<3}   distance = {dist:>8.2f}")
+
 
 # def print_vt_id_and_routes(evaluation: rb_ext.CVRPEvaluation, solution: rb.Solution):
 #     for i, route in enumerate(solution.routes):
@@ -31,6 +46,9 @@ def print_solution_info(name: str, solution: rb.Solution):
 @click.argument('instance-path', type=click.Path(exists=True, dir_okay=False, file_okay=True), required=True)
 @click.option('--output-path', type=click.Path(exists=True, dir_okay=True, file_okay=False), default=Path('.'))
 @click.option('--seed', type=int, default=None)
+
+
+
 def main(instance_path: Path, output_path: Path, seed: int):
     # set random number generator seed to ensure deterministic behavior for reproducibility
     if seed is None:
@@ -71,6 +89,8 @@ def main(instance_path: Path, output_path: Path, seed: int):
     ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance,granularity=20)
     ls_engine.improve(lns_savings_solution)
     print_solution_info("LocalSearch", lns_savings_solution)
+
+    print_route_summary(evaluation, lns_savings_solution, py_instance)
     # 6. metaheuristic (ALNS)
 
     # 7. custom operator (ALNS)

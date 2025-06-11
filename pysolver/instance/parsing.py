@@ -46,7 +46,10 @@ def parse_instance(instance_path: Path) -> Instance:
 
     # === Load id_map.txt ===
     id_map_path = instance_path.parent / f"{instance_path.stem}.id_map.txt"
-    id_map = load_id_map(id_map_path)
+    if id_map_path.exists():
+        id_map = load_id_map(id_map_path)
+    else:
+        id_map = {}
 
     # === 1. Parse Coordinates ===
     coord_lines = lines[coord_start:demand_start]
@@ -60,8 +63,8 @@ def parse_instance(instance_path: Path) -> Instance:
         y = float(tokens[2])
         vertex_type = VertexType.Depot if vertex_id == 0 else VertexType.Customer
 
-        # 🚨 FIX: use id_map to get correct vertex_name
-        vertex_name = id_map[int(tokens[0])]
+        vertex_name = id_map.get(int(tokens[0]), tokens[0])
+
 
         vertices.append(Vertex(
             vertex_id=vertex_id,

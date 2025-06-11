@@ -92,13 +92,30 @@ def parse_routes_file(path: Path, vertices: list[Vertex]) -> dict[ArcID, Arc]:
 
 
 
-def parse_instance_from_csv(nodes_path: Path, routes_path: Path, capacity: float, fleet_size: int) -> Instance:
+def parse_instance_from_csv(nodes_path: Path, routes_path: Path, capacity: float = None, fleet_size: int = None) -> Instance:
     vertices = parse_nodes_file(nodes_path)
     arcs = parse_routes_file(routes_path, vertices)
 
-    # hard-coded parameters for now
-    parameters = Parameters(capacity=883, fleet_size=12)
+    # Use filename to infer defaults if not explicitly provided
+    name = nodes_path.stem.lower()
 
+    if capacity is None or fleet_size is None:
+        if "paris" in name:
+            capacity = 2800
+            fleet_size = 19
+        elif "shanghai" in name:
+            capacity = 883
+            fleet_size = 17
+        elif "manhattan" in name:
+            capacity = 883
+            fleet_size = 12
+        elif "state" in name:
+            capacity = 2800
+            fleet_size = 8
+        else:
+            raise ValueError(f"Unknown instance type in file name: {nodes_path.name}")
+
+    parameters = Parameters(capacity=capacity, fleet_size=fleet_size)
     return Instance(parameters=parameters, vertices=vertices, arcs=arcs)
 
 
