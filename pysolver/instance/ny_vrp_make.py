@@ -6,8 +6,8 @@ from pysolver.instance.parsing_csv import (
     save_instance_as_vrp,
 )
 
-nodes   = Path("../../resources/data/NewYorkManhattan.nodes")
-routes  = Path("../../resources/data/NewYorkManhattan.routes")
+nodes   = Path("../../resources/data/NewYork.merged.nodes")
+routes  = Path("../../resources/data/newyork.routes")
 
 # choose your numbers
 cap      = 2800      # per‑truck capacity
@@ -23,7 +23,7 @@ inst = parse_instance_from_csv(
 print(vars(inst.vertices[0]))
 print(f"Number of arcs in instance.arcs: {len(inst.arcs)}")
 
-mapping_output_path = Path("../../resources/instances/test_instances/NewYorkManhattan.id_map.txt")
+mapping_output_path = Path("../../resources/instances/test_instances/newyork.id_map.txt")
 
 with open(mapping_output_path, "w") as f:
     for vertex in inst.vertices:
@@ -36,9 +36,9 @@ print(f"Wrote {mapping_output_path}")
 
 save_instance_as_vrp(
     instance     = inst,
-    output_path  = Path("../../resources/instances/test_instances/NewYorkManhattan.vrp"),
-    name         = "NEWYORK_MANHATTAN",
+    output_path  = Path("../../resources/instances/test_instances/newyork.vrp"),
+    name         = "NEWYORK",
     comment      = "Exported from .nodes/.routes",
 )
 
-print("Wrote resources/instances/test_instances/NewYorkManhattan.vrp")
+print("Wrote resources/instances/test_instances/newyork.vrp")
