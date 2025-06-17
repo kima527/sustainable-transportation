@@ -54,8 +54,8 @@ def create_cpp_instance(instance: Instance) -> rb_ext.Instance:
 
     cpp_vertices = [create_cpp_vertex(v, i, data_factory=vertex_data_factory) for i, v in enumerate(sorted_vertices)]
 
-    for v in sorted_vertices:
-        print(f"vertex_name = {v.vertex_name}, vertex_id = {v.vertex_id}")
+    # for v in sorted_vertices:
+    #     print(f"vertex_name = {v.vertex_name}, vertex_id = {v.vertex_id}")
 
     cpp_arcs = [
         [create_cpp_arc(instance.arcs[name_to_vertex_id[i.vertex_name], name_to_vertex_id[j.vertex_name]],
