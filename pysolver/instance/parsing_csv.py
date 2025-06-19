@@ -25,7 +25,8 @@ def parse_nodes_file(path: Path) -> list[Vertex]:
         name = row['Id'].strip()
         lon = float(row['Lon'])
         lat = float(row['Lat'])
-        demand = int(row['Demand[kg]'])
+        weight = int(row['Demand[kg]'])
+        volume = float(row['Demand[m^3*10^-3]'])
 
         vertex_type = VertexType.Depot if name.startswith("D") else VertexType.Customer
 
@@ -35,7 +36,8 @@ def parse_nodes_file(path: Path) -> list[Vertex]:
             vertex_type=vertex_type,
             x_coord=lon,
             y_coord=lat,
-            demand=demand
+            demand_weight=weight,
+            demand_volume=volume
         ))
 
     return vertices
@@ -90,56 +92,13 @@ def parse_routes_file(path: Path, vertices: list[Vertex]) -> dict[ArcID, Arc]:
     return arcs
 
 
+def parse_instance_from_csv(nodes_path: Path, routes_path: Path, capacity_weight: float, capacity_volume: float, fleet_size: int) -> Instance:
+    if capacity_weight is None or capacity_volume is None or fleet_size is None:
+        raise ValueError("Capacity (weight & volume) and fleet_size must be provided")
 
-
-def parse_instance_from_csv(nodes_path: Path, routes_path: Path, capacity: float = None, fleet_size: int = None) -> Instance:
     vertices = parse_nodes_file(nodes_path)
     arcs = parse_routes_file(routes_path, vertices)
 
-    # Use filename to infer defaults if not explicitly provided
-    name = nodes_path.stem.lower()
-
-    if capacity is None or fleet_size is None:
-        if "paris" in name:
-            capacity = 2800
-            fleet_size = 19
-        elif "shanghai" in name:
-            capacity = 883
-            fleet_size = 17
-        elif "manhattan" in name:
-            capacity = 883
-            fleet_size = 12
-        elif "state" in name:
-            capacity = 2800
-            fleet_size = 8
-        else:
-            raise ValueError(f"Unknown instance type in file name: {nodes_path.name}")
-
-    parameters = Parameters(capacity=capacity, fleet_size=fleet_size)
+    parameters = Parameters(capacity_weight=capacity_weight, capacity_volume=capacity_volume, fleet_size=fleet_size)
     return Instance(parameters=parameters, vertices=vertices, arcs=arcs)
 
-
-def save_instance_as_vrp(instance, output_path: Path = "resources/instances/test_instances/newyork_manhattan.vrp", name: str = "MANHATTAN", comment: str = ""):
-    with open(output_path, "w") as f:
-        f.write(f"NAME : {name}\n")
-        f.write("TYPE : CVRP\n")
-        f.write(f"COMMENT : {comment}\n")
-        f.write(f"DIMENSION : {len(instance.vertices)}\n")
-        f.write("EDGE_WEIGHT_TYPE : EUC_2D\n")
-        f.write(f"CAPACITY : {int(instance.parameters.capacity)}\n\n")
-
-        # Node coordinates section
-        f.write("NODE_COORD_SECTION\n")
-        for v in instance.vertices:
-            f.write(f"{v.vertex_id + 1} {v.x_coord:.6f} {v.y_coord:.6f}\n")
-
-        # Demands section
-        f.write("\nDEMAND_SECTION\n")
-        for v in instance.vertices:
-            f.write(f"{v.vertex_id + 1} {int(v.demand)}\n")
-
-        # Depot section
-        f.write("\nDEPOT_SECTION\n")
-        f.write(f"{instance.depot.vertex_id + 1}\n")
-        f.write("-1\n")
-        f.write("EOF\n")

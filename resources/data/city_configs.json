@@ -1,0 +1,117 @@
+{
+  "Paris": {
+    "nodes_path": "paris.nodes",
+    "routes_path": "paris.routes",
+
+    "fleets": [
+      {
+        "Carrier type": "I",
+        "Carrier count": 19,
+        "kW (HP)": 115,
+        "Loading area surface [m2]": 14.82,
+        "Loading area volume [m3]": 34.80,
+        "Payload [kg]": 2800,
+        "Aquisition cost [€]": 50000,
+        "Consumption": "17.50 l/100 km",
+        "Battery size [kWh]": null
+      }
+    ],
+
+    "Utility Costs [€ / a]": 147162.19,
+    "Operative Costs [€ / a]": 34506.78,
+    "Maintenance Costs [€ / a]": 9535.83,
+    "Wage Costs [€ / a]": 868000.00,
+    "Total Costs [€ / a]": 1059204.00,
+    "Profits [€ / a]": 1133349.14,
+    "Cash Flow [€ / a]": 74144.34,
+
+    "Electricity price [€/kWh]": 0.14,
+    "Diesel price [€/l]": 1.44,
+
+    "Average working hours per week": 36.3,
+    "Average annual salary [€]": 39099,
+    "Average annual costs – semi-truck driver [€]": 41800,
+    "Average annual costs – heavy-truck driver [€]": 43400
+  },
+
+  "Shanghai": {
+    "nodes_path": "shanghai.nodes",
+    "routes_path": "shanghai.routes",
+
+    "fleets": [
+      {
+        "Carrier type": "II",
+        "Carrier count": 17,
+        "kW (HP)": 112,
+        "Loading area surface [m2]": 4.37,
+        "Loading area volume [m3]": 5.80,
+        "Payload [kg]": 883,
+        "Aquisition cost [€]": 29150,
+        "Consumption": "8.00 l/100 km",
+        "Battery size [kWh]": null
+      }
+    ],
+
+    "Utility Costs [€ / a]": 72926.22,
+    "Operative Costs [€ / a]": 14901.42,
+    "Maintenance Costs [€ / a]": 16907.38,
+    "Wage Costs [€ / a]": 265200.00,
+    "Total Costs [€ / a]": 369935.02,
+    "Profits [€ / a]": 384732.42,
+    "Cash Flow [€ / a]": 14797.40,
+
+    "Electricity price [€/kWh]": 0.10,
+    "Diesel price [€/l]": 0.77,
+
+    "Average working hours per week": 44.7,
+    "Average annual salary [€]": 10394,
+    "Average annual costs – semi-truck driver [€]": 15600,
+    "Average annual costs – heavy-truck driver [€]": 17900
+  },
+
+  "NewYork": {
+    "nodes_path": "newyork.nodes",
+    "routes_path": "newyork.routes",
+
+    "fleets": [
+      {
+        "Carrier type": "I",
+        "Carrier count": 8,
+        "kW (HP)": 115,
+        "Loading area surface [m2]": 14.82,
+        "Loading area volume [m3]": 34.80,
+        "Payload [kg]": 2800,
+        "Aquisition cost [€]": 50000,
+        "Consumption": "17.50 l/100 km",
+        "Battery size [kWh]": null
+      },
+      {
+        "Carrier type": "II",
+        "Carrier count": 12,
+        "kW (HP)": 112,
+        "Loading area surface [m2]": 4.37,
+        "Loading area volume [m3]": 5.80,
+        "Payload [kg]": 883,
+        "Aquisition cost [€]": 29150,
+        "Consumption": "8.00 l/100 km",
+        "Battery size [kWh]": null
+      }
+    ],
+
+    "Utility Costs [€ / a]": 58864.88,
+    "Operative Costs [€ / a]": 13791.79,
+    "Maintenance Costs [€ / a]": 8773.21,
+    "Wage Costs [€ / a]": 431200.00,
+    "Total Costs [€ / a]": 512629.88,
+    "Profits [€ / a]": 572096.47,
+    "Cash Flow [€ / a]": 59466.59,
+
+    "Electricity price [€/kWh]": 0.11,
+    "Diesel price [€/l]": 0.63,
+
+    "Average working hours per week": 40.3,
+    "Average annual salary [€]": 58102,
+    "Average annual costs – semi-truck driver [€]": 57700,
+    "Average annual costs – heavy-truck driver [€]": 53900
+  }
+}

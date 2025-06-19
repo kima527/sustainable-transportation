@@ -23,7 +23,12 @@ class Vertex:
     vertex_type: VertexType
     x_coord: float
     y_coord: float
-    demand: int
+    demand_weight: int
+    demand_volume: float
+
+    @property
+    def demand(self) -> int:  # ← legacy alias
+        return self.demand_weight
 
     @property
     def is_customer(self) -> bool:
@@ -71,7 +76,8 @@ class Arc:
 
 @dataclass
 class Parameters:
-    capacity: float  # demand
+    capacity_weight: float
+    capacity_volume: float
     fleet_size: int
 
     @field_validator('*')

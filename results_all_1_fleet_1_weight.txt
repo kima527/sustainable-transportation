@@ -1,0 +1,108 @@
+loading instance from resources/instances/test_instances/paris.vrp
+Savings | obj: 667.845947265625 | feasible: True
+LNS_savings | obj: 657.6010131835938 | feasible: True
+LocalSearch | obj: 657.072021484375 | feasible: True
+Vehicles / routes used: 20
+  Route 1 :  customers = 5     distance =    20.38
+  Route 2 :  customers = 6     distance =    45.01
+  Route 3 :  customers = 5     distance =    47.12
+  Route 4 :  customers = 6     distance =    37.19
+  Route 5 :  customers = 6     distance =    21.42
+  Route 6 :  customers = 6     distance =    38.42
+  Route 7 :  customers = 6     distance =    32.57
+  Route 8 :  customers = 3     distance =    18.45
+  Route 9 :  customers = 6     distance =    24.05
+  Route 10:  customers = 5     distance =    23.83
+  Route 11:  customers = 7     distance =    40.68
+  Route 12:  customers = 5     distance =    32.28
+  Route 13:  customers = 6     distance =    28.51
+  Route 14:  customers = 7     distance =    25.11
+  Route 15:  customers = 5     distance =    52.01
+  Route 16:  customers = 6     distance =    26.37
+  Route 17:  customers = 6     distance =    51.99
+  Route 18:  customers = 6     distance =    35.57
+  Route 19:  customers = 6     distance =    41.43
+  Route 20:  customers = 4     distance =    14.69
+
+loading instance from resources/instances/test_instances/shanghai.vrp
+Savings | obj: 930.7210083007812 | feasible: True
+LNS_savings | obj: 895.0170288085938 | feasible: True
+LocalSearch | obj: 889.175048828125 | feasible: True
+Vehicles / routes used: 10
+  Route 1 :  customers = 22    distance =    99.03
+  Route 2 :  customers = 18    distance =    89.12
+  Route 3 :  customers = 21    distance =   132.84
+  Route 4 :  customers = 19    distance =   115.89
+  Route 5 :  customers = 17    distance =    51.37
+  Route 6 :  customers = 19    distance =    70.47
+  Route 7 :  customers = 21    distance =    94.67
+  Route 8 :  customers = 18    distance =    81.58
+  Route 9 :  customers = 22    distance =    88.91
+  Route 10:  customers = 15    distance =    65.30
+
+loading instance from resources/instances/test_instances/NewYorkManhattan.vrp
+Savings | obj: 255.7159881591797 | feasible: True
+LNS_savings | obj: 247.593994140625 | feasible: True
+LocalSearch | obj: 246.95401000976562 | feasible: True
+Vehicles / routes used: 7
+  Route 1 :  customers = 17    distance =    46.91
+  Route 2 :  customers = 16    distance =    37.92
+  Route 3 :  customers = 19    distance =    28.54
+  Route 4 :  customers = 18    distance =    46.87
+  Route 5 :  customers = 21    distance =    35.44
+  Route 6 :  customers = 11    distance =    22.92
+  Route 7 :  customers = 17    distance =    28.35
+
+loading instance from resources/instances/test_instances/NewYorkState.vrp
+Savings | obj: 635.3689575195312 | feasible: True
+LNS_savings | obj: 594.9819946289062 | feasible: True
+LocalSearch | obj: 594.9819946289062 | feasible: True
+Vehicles / routes used: 9
+  Route 1 :  customers = 5     distance =    72.63
+  Route 2 :  customers = 6     distance =    96.52
+  Route 3 :  customers = 0     distance =     0.00
+  Route 4 :  customers = 6     distance =    96.41
+  Route 5 :  customers = 6     distance =    41.98
+  Route 6 :  customers = 6     distance =    80.81
+  Route 7 :  customers = 5     distance =    68.55
+  Route 8 :  customers = 5     distance =    36.13
+  Route 9 :  customers = 6     distance =   101.95
+
+loading instance from resources/instances/test_instances/newyork.vrp
+Savings | obj: 1822.7650146484375 | feasible: True
+LNS_savings | obj: 1767.5040283203125 | feasible: False
+LocalSearch | obj: 1761.1590576171875 | feasible: True
+Vehicles / routes used: 33
+  Route 1 :  customers = 0     distance =     0.00
+  Route 2 :  customers = 0     distance =     0.00
+  Route 3 :  customers = 3     distance =    36.30
+  Route 4 :  customers = 4     distance =    34.38
+  Route 5 :  customers = 2     distance =    97.36
+  Route 6 :  customers = 2     distance =    76.71
+  Route 7 :  customers = 2     distance =    33.28
+  Route 8 :  customers = 2     distance =    57.33
+  Route 9 :  customers = 3     distance =   100.27
+  Route 10:  customers = 2     distance =    27.99
+  Route 11:  customers = 2     distance =    71.03
+  Route 12:  customers = 3     distance =    53.62
+  Route 13:  customers = 8     distance =    39.68
+  Route 14:  customers = 10    distance =    33.91
+  Route 15:  customers = 4     distance =    56.86
+  Route 16:  customers = 7     distance =    49.78
+  Route 17:  customers = 6     distance =    44.46
+  Route 18:  customers = 6     distance =    90.38
+  Route 19:  customers = 9     distance =    33.34
+  Route 20:  customers = 6     distance =    36.34
+  Route 21:  customers = 9     distance =    64.68
+  Route 22:  customers = 4     distance =    55.79
+  Route 23:  customers = 2     distance =    84.78
+  Route 24:  customers = 15    distance =    22.84
+  Route 25:  customers = 7     distance =    66.22
+  Route 26:  customers = 6     distance =    58.48
+  Route 27:  customers = 3     distance =    88.58
+  Route 28:  customers = 4     distance =    38.17
+  Route 29:  customers = 6     distance =    85.00
+  Route 30:  customers = 8     distance =    57.15
+  Route 31:  customers = 8     distance =    16.87
+  Route 32:  customers = 8     distance =    87.13
+  Route 33:  customers = 3     distance =    62.43

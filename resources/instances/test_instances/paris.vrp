@@ -1,9 +1,29 @@
 NAME : PARIS
-TYPE : CVRP
-COMMENT : Exported from .nodes/.routes
+TYPE : HFVRP
+COMMENT : generated from city_configs.json
 DIMENSION : 113
-EDGE_WEIGHT_TYPE : EUC_2D
-CAPACITY : 2800
+EDGE_WEIGHT_TYPE : EXPLICIT
+CAPACITY_WEIGHT : 2800
+
+FLEET_SECTION
+1 I 19 2800 34.8 999999 50000
+END_FLEET_SECTION
+
+CITY_INFO_SECTION
+Utility Costs [€ / a] : 147162.19
+Operative Costs [€ / a] : 34506.78
+Maintenance Costs [€ / a] : 9535.83
+Wage Costs [€ / a] : 868000.0
+Total Costs [€ / a] : 1059204.0
+Profits [€ / a] : 1133349.14
+Cash Flow [€ / a] : 74144.34
+Electricity price [€/kWh] : 0.14
+Diesel price [€/l] : 1.44
+Average working hours per week : 36.3
+Average annual salary [€] : 39099
+Average annual costs – semi-truck driver [€] : 41800
+Average annual costs – heavy-truck driver [€] : 43400
+END_CITY_INFO_SECTION
 
 NODE_COORD_SECTION
 1 2.409223 48.925258

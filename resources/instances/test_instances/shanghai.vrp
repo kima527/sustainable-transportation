@@ -1,9 +1,29 @@
-NAME : Shanghai
-TYPE : CVRP
-COMMENT : Exported from .nodes/.routes
+NAME : SHANGHAI
+TYPE : HFVRP
+COMMENT : generated from city_configs.json
 DIMENSION : 193
-EDGE_WEIGHT_TYPE : EUC_2D
-CAPACITY : 883
+EDGE_WEIGHT_TYPE : EXPLICIT
+CAPACITY_WEIGHT : 883
+
+FLEET_SECTION
+1 II 17 883 5.8 999999 29150
+END_FLEET_SECTION
+
+CITY_INFO_SECTION
+Utility Costs [€ / a] : 72926.22
+Operative Costs [€ / a] : 14901.42
+Maintenance Costs [€ / a] : 16907.38
+Wage Costs [€ / a] : 265200.0
+Total Costs [€ / a] : 369935.02
+Profits [€ / a] : 384732.42
+Cash Flow [€ / a] : 14797.4
+Electricity price [€/kWh] : 0.1
+Diesel price [€/l] : 0.77
+Average working hours per week : 44.7
+Average annual salary [€] : 10394
+Average annual costs – semi-truck driver [€] : 15600
+Average annual costs – heavy-truck driver [€] : 17900
+END_CITY_INFO_SECTION
 
 NODE_COORD_SECTION
 1 121.336400 31.148950

@@ -1,9 +1,30 @@
 NAME : NEWYORK
-TYPE : CVRP
-COMMENT : Exported from .nodes/.routes
+TYPE : HFVRP
+COMMENT : generated from city_configs.json
 DIMENSION : 165
-EDGE_WEIGHT_TYPE : EUC_2D
-CAPACITY : 883
+EDGE_WEIGHT_TYPE : EXPLICIT
+CAPACITY_WEIGHT : 2800
+
+FLEET_SECTION
+1 I 8 2800 34.8 999999 50000
+2 II 12 883 5.8 999999 29150
+END_FLEET_SECTION
+
+CITY_INFO_SECTION
+Utility Costs [€ / a] : 58864.88
+Operative Costs [€ / a] : 13791.79
+Maintenance Costs [€ / a] : 8773.21
+Wage Costs [€ / a] : 431200.0
+Total Costs [€ / a] : 512629.88
+Profits [€ / a] : 572096.47
+Cash Flow [€ / a] : 59466.59
+Electricity price [€/kWh] : 0.11
+Diesel price [€/l] : 0.63
+Average working hours per week : 40.3
+Average annual salary [€] : 58102
+Average annual costs – semi-truck driver [€] : 57700
+Average annual costs – heavy-truck driver [€] : 53900
+END_CITY_INFO_SECTION
 
 NODE_COORD_SECTION
 1 -73.934605 40.727101
