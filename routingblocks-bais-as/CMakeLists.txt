@@ -48,8 +48,14 @@ endif ()
 target_link_libraries(${PROJECT_NAME} PRIVATE ${ROUTINGBLOCKS_LIB})
 # Include main routing blocks library
 target_include_directories(${PROJECT_NAME} PRIVATE ${ROUTINGBLOCKS_INCLUDE_BASE})
+target_include_directories(${PROJECT_NAME} BEFORE PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/native/include)
+
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../native/include
+)
 target_compile_definitions(${PROJECT_NAME} PRIVATE "ROUTINGBLOCKS_EXT_MODULE_NAME=${PROJECT_NAME}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE "ROUTINGBLOCKS_EXT_MODULE_VERSION=${PROJECT_VERSION}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE "PYBIND11_USE_SMART_HOLDER_AS_DEFAULT")

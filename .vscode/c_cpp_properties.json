@@ -6,7 +6,6 @@
                 "C:/Python313/Include",
                 "${workspaceFolder}/.venv/Lib/site-packages/pybind11/include",
                 "${workspaceFolder}/.venv/Lib/site-packages/routingblocks/include"
-
             ],
             "defines": [
                 "_DEBUG",
@@ -16,7 +15,7 @@
             "windowsSdkVersion": "10.0.22621.0",
             "compilerPath": "cl.exe",
             "cStandard": "c17",
-            "cppStandard": "c++17",
+            "cppStandard": "c++20",
             "intelliSenseMode": "windows-msvc-x64"
         }
     ],

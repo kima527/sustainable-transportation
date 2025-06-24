@@ -124,6 +124,7 @@ HFVRPEvaluation(py::list   veh_props,
         return city.contains(key) ? city[key].cast<double>() : fallback;
     };                                                // <--- **semicolon!**
 
+<<<<<<< Updated upstream
     /* -------- city-level parameters ------------------------------------- */
     this->utility_other    = get_param("utility_other");
     this->maintenance_cost = get_param("maintenance_cost");
@@ -146,6 +147,20 @@ HFVRPEvaluation(py::list   veh_props,
         cap_w[i] = t[1].cast<resource_t>();
         cap_v[i] = t[2].cast<resource_t>();
         rng[i]   = t[3].cast<resource_t>();
+=======
+        /* ------- grab seven floats from the dict ---------------- */
+        auto get = [&](const char* key, double dflt = 0.0) -> resource_t {
+            return city.contains(key) ? city[key].cast<double>()
+                                      : static_cast<resource_t>(dflt);
+        };
+        utility_other    = get("utility_other");
+        maintenance_cost = get("maintenance_cost");
+        price_elec       = get("price_elec");
+        price_diesel     = get("price_diesel");
+        hours_per_day    = get("hours_per_day", 8.0);
+        wage_semi        = get("wage_semi");
+        wage_heavy       = get("wage_heavy");
+>>>>>>> Stashed changes
     }
 }
 
@@ -223,8 +238,7 @@ HFVRPEvaluation(py::list   veh_props,
 
     size_t compute_best_vehicle_id_of_route(
         const routingblocks::Route& r) const {
-        const auto& f = r.end_depot()->forward_label()
-                            .get<HFVRP_forward_label>();
+        const auto& f = r.end_depot().operator*().forward_label().get<HFVRP_forward_label>();
         return _best_vehicle(f.distance, f.load_weight,
                              f.load_volume, f.work_time).first;
     }
@@ -273,8 +287,8 @@ HFVRPEvaluation(py::list   veh_props,
 PYBIND11_MODULE(_routingblocks_bais_as, m)
 {
     pybind11::module_::import("routingblocks._routingblocks");
-    py::class_<routingblocks::Vertex>(m, "Vertex"); // alias only
-    py::class_<routingblocks::Arc>   (m, "Arc");
+    // py::class_<routingblocks::Vertex>(m, "Vertex"); // alias only
+    // py::class_<routingblocks::Arc>   (m, "Arc");
 
     // Version string that setup.py / CMake passes in
     m.attr("__version__") = PREPROCESSOR_TO_STRING(ROUTINGBLOCKS_EXT_MODULE_VERSION);
@@ -282,7 +296,7 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
     /* --------------------------------------------------------------
        1)  Register the *abstract* C++ base so Python knows it exists
     -------------------------------------------------------------- */
-    py::class_<routingblocks::Evaluation>(m, "Evaluation");
+    // py::class_<routingblocks::Evaluation>(m, "Evaluation");
     py::class_<CityParams>(m, "CityParams")
     .def(py::init<resource_t,resource_t,resource_t,
                   resource_t,resource_t,resource_t,resource_t>());
@@ -324,7 +338,11 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
         .def(py::init<py::list, resource_t, py::dict>(),
              py::arg("vehicle_properties"),
              py::arg("max_work_time_sec"),
+<<<<<<< Updated upstream
              py::arg("city"))
+=======
+             py::arg("city_params"))
+>>>>>>> Stashed changes
         .def("concatenate",                     &HFVRPEvaluation::concatenate)
         .def("compute_cost",                    &HFVRPEvaluation::compute_cost)
         .def("compute_best_vehicle_id_of_route",&HFVRPEvaluation::compute_best_vehicle_id_of_route)

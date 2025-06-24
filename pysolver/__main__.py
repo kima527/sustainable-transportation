@@ -99,7 +99,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # print_vt_id_and_routes(evaluation, lns_insertion_solution)
 
     # 4. improve solution (LS)
-    ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance,granularity=20)
+    ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance, granularity=20)
     ls_engine.improve(lns_savings_solution)
     print_solution_info("LocalSearch", lns_savings_solution)
 
