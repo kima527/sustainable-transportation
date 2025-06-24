@@ -71,7 +71,7 @@ def build_vrp(city: str, spec: dict):
                 f"{fl['Payload [kg]']} "
                 f"{fl['Loading area volume [m3]']} "
                 f"{fl.get('max_range', 999999)} "
-                f"{fl['Aquisition cost [€]']}\n"
+                f"{fl['Aquisition cost[€/d]']}\n"
             )
         f.write("END_FLEET_SECTION\n\n")
 

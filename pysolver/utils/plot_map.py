@@ -53,7 +53,8 @@ def draw_routes_on_map(instance: Instance, R: list[list[int]]):
                 tooltip=f"Route {r_idx}"
             ).add_to(m)
         else:
-            print(f"[Folium] Skipping route {r_idx} (too few valid points): {route}")
+            pass
+            #print(f"[Folium] Skipping route {r_idx} " f"(too few valid points, {len(route)} customers)")
 
 
     m.save("vis_routes_map.html")

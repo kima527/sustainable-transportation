@@ -27,23 +27,29 @@ import routingblocks as rb
 import routingblocks_bais_as as rb_ext
 
 def create_cpp_vertex(vertex: Vertex, vertex_id: int, data_factory: Callable[[Vertex], Any]) -> rb_ext.Vertex:
-    return rb_ext.create_cvrp_vertex(vertex.vertex_id, vertex.vertex_name, False, vertex_id == 0, data_factory(vertex))
+    return rb_ext.create_hfvrp_vertex(vertex.vertex_id, vertex.vertex_name, False, vertex_id == 0, data_factory(vertex))
 
 
 def create_cpp_arc(arc: Arc, data_factory: Callable[[Arc], Any]) -> rb_ext.Arc:
-    return rb_ext.create_cvrp_arc(data_factory(arc))
+    return rb_ext.create_hfvrp_arc(data_factory(arc))
 
 
 def cvrp_vertex_data_factory(vertex: Vertex) -> rb_ext.CVRPVertexData:
     return rb_ext.CVRPVertexData(vertex.demand)
 
+def hfvrp_vertex_data_factory(v: Vertex) -> rb_ext.HFVRPVertexData:
+    return rb_ext.HFVRPVertexData(v.demand_weight, v.demand_volume)
+
+def hfvrp_arc_data_factory(a: Arc) -> rb_ext.HFVRPArcData:
+    """Build the C++ arc-payload (distance & travel-time)."""
+    return rb_ext.HFVRPArcData(a.distance, a.duration)
 
 def cvrp_arc_data_factory(arc: Arc) -> rb_ext.CVRPArcData:
     return rb_ext.CVRPArcData(arc.distance)
 
 def create_cpp_instance(instance: Instance) -> rb_ext.Instance:
-    vertex_data_factory = cvrp_vertex_data_factory
-    arc_data_factory = cvrp_arc_data_factory
+    vertex_data_factory = hfvrp_vertex_data_factory  # <-- CHANGED
+    arc_data_factory = hfvrp_arc_data_factory
 
     # Convert vertices
     sorted_vertices = [instance.depot, *sorted(instance.customers, key=lambda v: v.vertex_id), *[]]

@@ -61,7 +61,7 @@ class Vertex:
 @dataclass
 class Arc:
     distance: float
-    # duration: timedelta
+    duration: float
 
     @field_validator('*')
     def check_nonzero_members(cls, value):
@@ -79,6 +79,14 @@ class Parameters:
     capacity_weight: float
     capacity_volume: float
     fleet_size: int
+    max_work_time: float  # seconds
+    utility_other: float  # €/d
+    maintenance_cost: float  # €/d
+    price_elec: float  # €/kWh
+    price_diesel: float  # €/l
+    hours_per_day: float  # h/d
+    wage_semi: float  # €/d
+    wage_heavy: float  # €/d
 
     @field_validator('*')
     def check_nonzero_members(cls, value):

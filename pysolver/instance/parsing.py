@@ -1,3 +1,4 @@
+import re
 from itertools import product
 from math import sqrt
 from pathlib import Path
@@ -31,18 +32,41 @@ def load_id_map(id_map_path: Path) -> dict[int, str]:
     return result
 
 
-def parse_instance(instance_path: Path) -> Instance:
+def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Instance:
     with open(instance_path) as f:
         lines = [line.strip() for line in f if line.strip()]
 
-    # === Header values ===
-    dimension = int(next(l for l in lines if l.startswith("DIMENSION")).split(":")[1])
-    capacity = int(next(l for l in lines if l.startswith("CAPACITY")).split(":")[1])
+        # ---------- CITY_INFO_SECTION (optional) --------------------
+        try:
+            ci_s = lines.index("CITY_INFO_SECTION") + 1
+            ci_e = lines.index("END_CITY_INFO_SECTION")
+            city = _parse_city_info(lines[ci_s:ci_e])
+        except ValueError:
+            city = {}  # file has no city block
+
+        # ---------- FLEET_SECTION (required) ------------------------
+        try:
+            fs_start = lines.index("FLEET_SECTION") + 1
+            fs_end = lines.index("END_FLEET_SECTION")
+        except ValueError:
+            raise ValueError(f"{instance_path.name} is missing a FLEET_SECTION")
+
+    fleets: list[tuple[float, float, float, float]] = []  # (acq, cap_w, cap_v, range)
+    for ln in lines[fs_start:fs_end]:
+        # idx type cnt cap_w cap_v range acq
+        _, _, cnt, cap_w, cap_v, rng, acq = ln.split()
+        fleets.append((float(acq), float(cap_w), float(cap_v), float(rng)))
+
+    # use the **first** vehicle type as legacy capacity defaults
+    cap_w = fleets[0][1]
+    cap_v = fleets[0][2]
+    fleet_sz = sum(int(ln.split()[2]) for ln in lines[fs_start:fs_end])
 
     # === Section indices ===
     coord_start = lines.index("NODE_COORD_SECTION") + 1
     demand_start = lines.index("DEMAND_SECTION")
     depot_start = lines.index("DEPOT_SECTION")
+
 
     # === Load id_map.txt ===
     id_map_path = instance_path.parent / f"{instance_path.stem}.id_map.txt"
@@ -72,24 +96,79 @@ def parse_instance(instance_path: Path) -> Instance:
             vertex_type=vertex_type,
             x_coord=x,
             y_coord=y,
-            demand=0  # Will be filled next
+            demand_weight=0,  # to be filled below
+            demand_volume=0.0
         ))
 
     # === 2. Parse Demands ===
-    demand_lines = lines[demand_start + 1:depot_start]
-    for line in demand_lines:
-        tokens = line.split()
-        vertex_id = int(tokens[0]) - 1
-        demand = int(tokens[1])
-        vertices[vertex_id].demand = demand
+    for ln in lines[demand_start + 1: depot_start]:
+        idx, w = ln.split()[:2]
+        vid = int(idx) - 1
+        vertices[vid].demand_weight = int(w)
+        # ➜ simple proxy: assume 1 m³ per 100 kg if no field exists
+        vertices[vid].demand_volume = float(w) / 100.0
+
+    avg_work_h = city.get("hours_per_day", 8.0)
+    max_work_sec = 3600.0 * avg_work_h
 
     # === 3. Parameters ===
-    parameters = Parameters(capacity=capacity, fleet_size=sum(1 for v in vertices if v.is_customer))
+    parameters = Parameters(
+        capacity_weight=cap_w,
+        capacity_volume=cap_v,
+        fleet_size=fleet_sz,
+        max_work_time=max_work_sec,
+        **city
+    )
 
     # === 4. Arcs ===
     ROUTES_DIR = Path("resources/data")
     inferred_routes = ROUTES_DIR / f"{instance_path.stem}.routes"
     arcs = parse_routes_file(inferred_routes, vertices)
 
-    return Instance(parameters=parameters, vertices=vertices, arcs=arcs)
+    inst = Instance(parameters=parameters, vertices=vertices, arcs=arcs)
 
+    if return_fleets:  # ← only when the caller asks for it
+        return inst, fleets  # (Instance, list[tuple[acq, cap_w, cap_v, rng]])
+    return inst
+
+
+def _to_float(x, default):
+    return float(str(x).replace(",", ".")) if x is not None else float(default)
+
+def _floats(line: str) -> list[float]:
+    return list(map(float, line.split()))
+
+# ───────────────────────────────────────────────── CITY INFO ─────
+def _parse_city_info(raw_lines: list[str]) -> dict[str, float]:
+    """
+    Turns the seven lines inside CITY_INFO_SECTION into a flat dict
+    that can be unpacked with ** into Parameters().
+    """
+    key_map = {
+        "other utility cost":        "utility_other",
+        "maintenance costs":         "maintenance_cost",
+        "electricity price":         "price_elec",
+        "diesel price":              "price_diesel",
+        "average working hours":     "hours_per_day",
+        "semi-truck driver":         "wage_semi",
+        "heavy-truck driver":        "wage_heavy",
+    }
+
+    out: dict[str, float] = {}
+    for ln in raw_lines:
+        if ":" not in ln:
+            continue
+        left, right = ln.split(":", 1)
+        left_lc = left.lower()
+        # keep only digits, dot, minus, comma
+        num = float(re.sub(r"[^\d\.\-]+", "", right).replace(",", ".") or "0")
+        for needle, target in key_map.items():
+            if needle in left_lc:
+                out[target] = num
+                break
+
+    # guarantee that every expected key exists
+    for target in key_map.values():
+        out.setdefault(target, 0.0)
+
+    return out

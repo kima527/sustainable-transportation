@@ -4,6 +4,7 @@ import random
 import click
 import routingblocks as rb
 import routingblocks_bais_as as rb_ext
+from collections import namedtuple
 import folium
 
 from pysolver.construction.savings import savings
@@ -57,15 +58,27 @@ def main(instance_path: Path, output_path: Path, seed: int):
     cpp_random = rb.Random(seed)
 
     instance_path = Path(instance_path)
-    output_path = Path(output_path)
 
-    print(f"loading instance from {instance_path}")
-
-    py_instance = parse_instance(instance_path)
-    instance = create_cpp_instance(py_instance)
+    py_instance, fleets = parse_instance(instance_path, return_fleets=True)
     cpp_instance = create_cpp_instance(py_instance)
 
-    evaluation = rb_ext.CVRPEvaluation(py_instance.parameters.capacity)
+    veh_props = [(acq, cap_w, cap_v, rng) for (acq, cap_w, cap_v, rng) in fleets]
+    CityParams = namedtuple("CityParams",
+                            ["utility_other", "maintenance_cost",
+                             "price_elec", "price_diesel",
+                             "hours_per_day", "wage_semi", "wage_heavy"])
+
+    p = py_instance.parameters
+    city = CityParams(
+        p.utility_other,
+        p.maintenance_cost,
+        p.price_elec,
+        p.price_diesel,
+        p.hours_per_day,
+        p.wage_semi,
+        p.wage_heavy,
+    )
+    evaluation = rb_ext.HFVRPEvaluation(veh_props, p.max_work_time, city)
 
     # 0. check routingblocks working properly
     # solution = generate_random_solution(py_instance, evaluation, instance)
@@ -90,7 +103,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     ls_engine.improve(lns_savings_solution)
     print_solution_info("LocalSearch", lns_savings_solution)
 
-    print_route_summary(evaluation, lns_savings_solution, py_instance)
+    #print_route_summary(evaluation, lns_savings_solution, py_instance)
     # 6. metaheuristic (ALNS)
 
     # 7. custom operator (ALNS)
