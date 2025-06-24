@@ -8,12 +8,16 @@ def savings(py_instance: Instance, evaluation: rb.Evaluation,
             cpp_instance: rb.Instance) -> rb.Solution:
     solution = rb.Solution(evaluation, cpp_instance, len(py_instance.vertices) - 1)
     routes: [rb.Route] = [r for r in solution.routes]
-    capacity: list[float] = []
+
+    capacity_w: list[float] = []  # kg
+    capacity_v: list[float] = []  # m³
+
     c_to_route_id = [-1]
     for c_i in range(1, len(py_instance.vertices)):
         c_to_route_id.append(c_i - 1)
         routes[c_i - 1].insert_vertices_after([(c_i, 0)])
-        capacity.append(py_instance.vertices[c_i].demand)
+        capacity_w.append(py_instance.vertices[c_i].demand_weight)
+        capacity_v.append(py_instance.vertices[c_i].demand_volume)
 
     savings = list()
     for c_i in range(1, len(py_instance.vertices)):
@@ -40,7 +44,10 @@ def savings(py_instance: Instance, evaluation: rb.Evaluation,
 
         if route_id_of_c_i != route_id_of_c_j and len(r_i) > 2 and len(r_j) > 2 \
                 and r_i[len(r_i) - 2].vertex_id == c_i and r_j[1].vertex_id == c_j:
-            if capacity[route_id_of_c_i] + capacity[route_id_of_c_j] > py_instance.parameters.capacity:
+            if (capacity_w[route_id_of_c_i] + capacity_w[route_id_of_c_j] >
+                    py_instance.parameters.capacity_weight or
+                    capacity_v[route_id_of_c_i] + capacity_v[route_id_of_c_j] >
+                    py_instance.parameters.capacity_volume):
                 pass
             else:
                 # merge
@@ -51,8 +58,9 @@ def savings(py_instance: Instance, evaluation: rb.Evaluation,
                 r_i.exchange_segments(len(r_i) - 1, len(r_i) - 1, 1, len(r_j) - 1, r_j)
                 c_to_route_id[r_i[len(r_i) - 2].vertex_id] = route_id_of_c_i
 
-                capacity[route_id_of_c_i] = capacity[route_id_of_c_i] + capacity[route_id_of_c_j]
-                capacity[route_id_of_c_j] = 0
+                capacity_w[route_id_of_c_i] += capacity_w[route_id_of_c_j]
+                capacity_v[route_id_of_c_i] += capacity_v[route_id_of_c_j]
+                capacity_w[route_id_of_c_j] = capacity_v[route_id_of_c_j] = 0
 
     i = 0
     while i < len(solution):

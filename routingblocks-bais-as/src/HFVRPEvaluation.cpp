@@ -262,8 +262,6 @@ class HFVRPEvaluation
 PYBIND11_MODULE(_routingblocks_bais_as, m)
 {
     pybind11::module_::import("routingblocks._routingblocks");
-    // py::class_<routingblocks::Vertex>(m, "Vertex"); // alias only
-    // py::class_<routingblocks::Arc>   (m, "Arc");
 
     // Version string that setup.py / CMake passes in
     m.attr("__version__") = PREPROCESSOR_TO_STRING(ROUTINGBLOCKS_EXT_MODULE_VERSION);
@@ -271,7 +269,7 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
     /* --------------------------------------------------------------
        1)  Register the *abstract* C++ base so Python knows it exists
     -------------------------------------------------------------- */
-    // py::class_<routingblocks::Evaluation>(m, "Evaluation");
+
     py::class_<CityParams>(m, "CityParams")
     .def(py::init<resource_t,resource_t,resource_t,
                   resource_t,resource_t,resource_t,resource_t>());

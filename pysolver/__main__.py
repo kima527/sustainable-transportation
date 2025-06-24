@@ -78,7 +78,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
         p.wage_semi,
         p.wage_heavy,
     )
-    evaluation = rb_ext.HFVRPEvaluation(veh_props, p.max_work_time, city)
+    evaluation = rb_ext.HFVRPEvaluation(veh_props, p.max_work_time, city._asdict())
 
     # 0. check routingblocks working properly
     # solution = generate_random_solution(py_instance, evaluation, instance)
@@ -103,7 +103,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     ls_engine.improve(lns_savings_solution)
     print_solution_info("LocalSearch", lns_savings_solution)
 
-    #print_route_summary(evaluation, lns_savings_solution, py_instance)
+    print_route_summary(evaluation, lns_savings_solution, py_instance)
     # 6. metaheuristic (ALNS)
 
     # 7. custom operator (ALNS)
