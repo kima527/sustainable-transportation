@@ -110,44 +110,21 @@ class HFVRPEvaluation
     double _worktime_penalty_factor        = 1.0;
 
   public:
-    // --------------------------------------------------------------------------
-//  HFVRPEvaluation  –  constructor
-// --------------------------------------------------------------------------
-HFVRPEvaluation(py::list   veh_props,
-                resource_t max_work_time_sec,
-                py::dict   city)
-    : max_work_time(max_work_time_sec)                // ← member-init list
-{
-    /* -------- tiny helper to fetch numbers from the Python dict ---------- */
-    auto get_param = [&](const char* k, double fallback = 0.0) -> double {
-        py::str key(k);
-        return city.contains(key) ? city[key].cast<double>() : fallback;
-    };                                                // <--- **semicolon!**
+    HFVRPEvaluation(py::list veh_props, resource_t max_work_time_sec, py::dict city)
+        : max_work_time(max_work_time_sec) {
+        num_veh = py::len(veh_props);
+        acq.resize(num_veh);
+        cap_w.resize(num_veh);
+        cap_v.resize(num_veh);
+        rng.resize(num_veh);
+        for (size_t i = 0; i < num_veh; ++i) {
+            auto t       = veh_props[i].cast<py::tuple>();
+            acq[i]  = t[0].cast<resource_t>();
+            cap_w[i]= t[1].cast<resource_t>();
+            cap_v[i]= t[2].cast<resource_t>();
+            rng[i]  = t[3].cast<resource_t>();
+        }
 
-<<<<<<< Updated upstream
-    /* -------- city-level parameters ------------------------------------- */
-    this->utility_other    = get_param("utility_other");
-    this->maintenance_cost = get_param("maintenance_cost");
-    this->price_elec       = get_param("price_elec");
-    this->price_diesel     = get_param("price_diesel");
-    this->hours_per_day    = get_param("hours_per_day", 8.0);
-    this->wage_semi        = get_param("wage_semi");
-    this->wage_heavy       = get_param("wage_heavy");
-
-    /* -------- vehicle array parameters ---------------------------------- */
-    num_veh = py::len(veh_props);
-    acq.resize(num_veh);
-    cap_w.resize(num_veh);
-    cap_v.resize(num_veh);
-    rng.resize(num_veh);
-
-    for (size_t i = 0; i < num_veh; ++i) {
-        auto t   = veh_props[i].cast<py::tuple>();
-        acq[i]   = t[0].cast<resource_t>();
-        cap_w[i] = t[1].cast<resource_t>();
-        cap_v[i] = t[2].cast<resource_t>();
-        rng[i]   = t[3].cast<resource_t>();
-=======
         /* ------- grab seven floats from the dict ---------------- */
         auto get = [&](const char* key, double dflt = 0.0) -> resource_t {
             return city.contains(key) ? city[key].cast<double>()
@@ -160,9 +137,7 @@ HFVRPEvaluation(py::list   veh_props,
         hours_per_day    = get("hours_per_day", 8.0);
         wage_semi        = get("wage_semi");
         wage_heavy       = get("wage_heavy");
->>>>>>> Stashed changes
     }
-}
 
   private:
     cost_t _compute_cost_for_vehicle_id(size_t k,
@@ -338,11 +313,7 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
         .def(py::init<py::list, resource_t, py::dict>(),
              py::arg("vehicle_properties"),
              py::arg("max_work_time_sec"),
-<<<<<<< Updated upstream
-             py::arg("city"))
-=======
              py::arg("city_params"))
->>>>>>> Stashed changes
         .def("concatenate",                     &HFVRPEvaluation::concatenate)
         .def("compute_cost",                    &HFVRPEvaluation::compute_cost)
         .def("compute_best_vehicle_id_of_route",&HFVRPEvaluation::compute_best_vehicle_id_of_route)
