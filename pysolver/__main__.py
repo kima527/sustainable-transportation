@@ -30,12 +30,42 @@ def route_distance(route, py_instance):
         distance += py_instance.arcs[(u, v)].distance  # or .cost if 'distance' doesn't exist
     return distance
 
-def print_route_summary(evaluation: rb.Evaluation, solution: rb.Solution, py_instance):
-    print(f"Vehicles / routes used: {len(solution)}")
-    for r_id, route in enumerate(solution.routes, start=1):
-        n_customers = len(route) - 2
-        dist = route_distance(route, py_instance)
-        print(f"  Route {r_id:<2}:  customers = {n_customers:<3}   distance = {dist:>8.2f}")
+def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.HFVRPEvaluation):
+    routes = list(solution.routes)
+    print("=" * 100)
+    print(f"ROUTE SUMMARY  |  Total Routes Used: {len(routes)}")
+    print("=" * 100)
+    print(f"{'Route':<10} {'#Cust.':<10} {'Cost(€)':<10} {'Dist.(km)':<10} {'Dur.(min)':<10} "
+          f"{'Veh.Type':<10} {'Util.W':<10} {'Util.V':<10}")
+    print("-" * 100)
+
+    for idx, route in enumerate(routes):
+        if len(route) <= 2:
+            print(f"{idx + 1:<6} {'EMPTY':<8}")
+            continue
+
+        try:
+            summary = evaluation.summarize_route(route)
+
+            route_id = idx + 1
+            num_customers = len(route) - 2
+            cost = summary["cost"]
+            distance = summary["distance"]
+            duration = summary["duration"] / 60  # seconds → min
+            vehicle_type = summary["vehicle_type"]
+
+            weight_util = (summary["load_weight"] / summary["capacity_weight"]
+                           if summary["capacity_weight"] > 0 else 0.0)
+            volume_util = (summary["load_volume"] / summary["capacity_volume"]
+                           if summary["capacity_volume"] > 0 else 0.0)
+
+            print(f"{route_id:<10} {num_customers:<10} €{cost:<10.2f} {distance:<10.1f} "
+                  f"{duration:<10.1f} {vehicle_type:<10} {weight_util:<10.1%} {volume_util:<10.1%}")
+
+        except Exception as e:
+            print(f"[ERROR] Failed to summarize Route {idx + 1}: {e}")
+
+    print("=" * 100)
 
 
 # def print_vt_id_and_routes(evaluation: rb_ext.CVRPEvaluation, solution: rb.Solution):
@@ -94,7 +124,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     #print_solution_info("Insertion", insertion_solution)
 
     # 3. metaheuristic (LNS)
-    lns_savings_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 10000)
+    lns_savings_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 250)
     print_solution_info("LNS_savings", lns_savings_solution)
     # print_vt_id_and_routes(evaluation, lns_insertion_solution)
 
@@ -103,7 +133,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     ls_engine.improve(lns_savings_solution)
     print_solution_info("LocalSearch", lns_savings_solution)
 
-    print_route_summary(evaluation, lns_savings_solution, py_instance)
+    print_route_summary(py_instance, lns_savings_solution, evaluation)
     # 6. metaheuristic (ALNS)
 
     # 7. custom operator (ALNS)

@@ -70,10 +70,12 @@ class HFVRPEvaluation
   public:
     enum CostComponent { DIST = 0, RANGE = 1, OVER_W = 2,
                          OVER_V = 3, OVERTIME = 4 };
+    std::vector<resource_t> acq, cap_w, cap_v, rng;
+
 
   private:
     int num_veh;
-    std::vector<resource_t> acq, cap_w, cap_v, rng;
+    // std::vector<resource_t> acq, cap_w, cap_v, rng;
     resource_t max_work_time;
     double pen_over   = 1.0, pen_range = 1.0, pen_time = 1.0;
     resource_t utility_other     = 0.0;
@@ -218,6 +220,25 @@ class HFVRPEvaluation
                              f.load_volume, f.work_time).first;
     }
 
+    public:
+        py::dict summarize_route(const routingblocks::Route& route) const {
+            const auto& label = route.end_depot().operator*().forward_label().get<HFVRP_forward_label>();
+            auto vid = _best_vehicle(label.distance, label.load_weight, label.load_volume, label.work_time).first;
+            auto cost = _compute_cost_for_vehicle_id(vid, label.distance, label.load_weight, label.load_volume, label.work_time);
+
+            py::dict result;
+            result["vehicle_type"] = vid;
+            result["cost"] = cost;
+            result["distance"] = label.distance;
+            result["duration"] = label.work_time;
+            result["load_weight"] = label.load_weight;
+            result["load_volume"] = label.load_volume;
+            result["capacity_weight"] = cap_w[vid];
+            result["capacity_volume"] = cap_v[vid];
+            return result;
+        }
+
+
     /* ---- label propagation -------------------------------------------- */
 
     HFVRP_forward_label propagate_forward(
@@ -321,6 +342,7 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
         .def("propagate_backward",              &HFVRPEvaluation::propagate_backward)
         .def("create_forward_label",            &HFVRPEvaluation::create_forward_label)
         .def("create_backward_label",           &HFVRPEvaluation::create_backward_label)
+        .def("summarize_route",                 &HFVRPEvaluation::summarize_route)
         .def_property_readonly("utility_other",   &HFVRPEvaluation::get_utility_other)
         .def_property_readonly("maintenance_cost",&HFVRPEvaluation::get_maintenance_cost)
         .def_property_readonly("price_elec",      &HFVRPEvaluation::get_price_elec)
@@ -328,6 +350,8 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
         .def_property_readonly("hours_per_day",   &HFVRPEvaluation::get_hours_per_day)
         .def_property_readonly("wage_semi",       &HFVRPEvaluation::get_wage_semi)
         .def_property_readonly("wage_heavy",      &HFVRPEvaluation::get_wage_heavy)
+        .def_readonly("cap_w", &HFVRPEvaluation::cap_w)
+        .def_readonly("cap_v", &HFVRPEvaluation::cap_v)
         /* tunable penalty factors */
         .def_property("overload_penalty_factor",
              &HFVRPEvaluation::get_overload_penalty_factor,
