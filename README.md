@@ -34,6 +34,11 @@ Run the following commands in the terminal in the root folder of this project:
 - `pip install -r pysolver/requirements.txt` (install other packages)
 - `python -m pysolver ./resources/instances/Augerat/A-n32-k5.vrp` (run solver)
 
+- `python -m pysolver ./resources/instances/test_instances/paris.vrp` (run paris instances)
+- `python -m pysolver ./resources/instances/test_instances/newyork.vrp` (run newy ork instances)
+- `python -m pysolver ./resources/instances/test_instances/shanghai.vrp` (run shanghai instances)
+
+
 
 # Link to excel solver documentation
 https://www.sciencedirect.com/science/article/pii/S0305054817300552

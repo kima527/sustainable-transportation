@@ -107,9 +107,9 @@ class HFVRPEvaluation
 
 
   private:
-    double _overload_penalty_factor        = 1.0;
-    double _range_excess_penalty_factor    = 1.0;
-    double _worktime_penalty_factor        = 1.0;
+    double _overload_penalty_factor        = 3.0;
+    double _range_excess_penalty_factor    = 3.0;
+    double _worktime_penalty_factor        = 1.5;
 
   public:
     HFVRPEvaluation(py::list veh_props, resource_t max_work_time_sec, py::dict city)
