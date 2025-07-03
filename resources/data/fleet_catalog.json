@@ -1,0 +1,65 @@
+{
+  "I" : {
+    "volume_m3"   : 34.8,
+    "payload_kg"  : 2800,
+    "acq_cost"    : 50000,
+    "cons_kWh_km" : null,
+    "cons_l_km"   : 0.175,
+    "max_range_km": 999999,
+    "maint_c_km"  : 0.059
+  },
+  "II": {
+    "volume_m3"   : 5.8,
+    "payload_kg"  : 883,
+    "acq_cost"    : 29150,
+    "cons_kWh_km" : null,
+    "cons_l_km"   : 0.08,
+    "max_range_km": 999999,
+    "maint_c_km"  : 0.059
+  },
+  "III": {
+    "volume_m3"   : 3.2,
+    "payload_kg"  : 670,
+    "acq_cost"    : 20620,
+    "cons_kWh_km" : null,
+    "cons_l_km"   : 0.059,
+    "max_range_km": 999999,
+    "maint_c_km"  : 0.059
+  },
+  "IV" : {
+    "volume_m3"   : 21.56,
+    "payload_kg"  : 2800,
+    "acq_cost"    : 990,
+    "cons_kWh_km" : 0.828,
+    "cons_l_km"   : null,
+    "max_range_km": 80,
+    "maint_c_km"  : 0.049
+  },
+  "V" : {
+    "volume_m3"   : 7.67,
+    "payload_kg"  : 905,
+    "acq_cost"    : 45450,
+    "cons_kWh_km" : 0.1951,
+    "cons_l_km"   : null,
+    "max_range_km": 205,
+    "maint_c_km"  : 0.049
+  },
+  "VI" : {
+    "volume_m3"   : 4.27,
+    "payload_kg"  : 720,
+    "acq_cost"    : 35950,
+    "cons_kWh_km" : 0.1681,
+    "cons_l_km"   : null,
+    "max_range_km": 119,
+    "maint_c_km"  : 0.049
+  },
+  "VII" : {
+    "volume_m3"   : 0.2,
+    "payload_kg"  : 100,
+    "acq_cost"    : 5300,
+    "cons_kWh_km" : null,
+    "cons_l_km"   : null,
+    "max_range_km": 120,
+    "maint_c_km"  : 0.049
+  }
+}

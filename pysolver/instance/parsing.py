@@ -54,8 +54,8 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
     fleets: list[tuple[float, float, float, float]] = []  # (acq, cap_w, cap_v, range)
     for ln in lines[fs_start:fs_end]:
         # idx type cnt cap_w cap_v range acq
-        _, _, cnt, cap_w, cap_v, rng, acq = ln.split()
-        fleets.append((float(acq), float(cap_w), float(cap_v), float(rng)))
+        _, typ, cnt, vol, pay_w, acq_c, con_kWh, con_l, m_rng, main_c = ln.split()
+        fleets.append((float(acq_c), float(pay_w), float(vol), float(m_rng)))
 
     # use the **first** vehicle type as legacy capacity defaults
     cap_w = fleets[0][1]
@@ -97,7 +97,8 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
             x_coord=x,
             y_coord=y,
             demand_weight=0,  # to be filled below
-            demand_volume=0.0
+            demand_volume=0.0,
+            service_time=15*60 #second
         ))
 
     # === 2. Parse Demands ===

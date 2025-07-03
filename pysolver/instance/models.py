@@ -25,6 +25,7 @@ class Vertex:
     y_coord: float
     demand_weight: int
     demand_volume: float
+    service_time: float
 
     @property
     def demand(self) -> int:  # ← legacy alias
@@ -86,7 +87,8 @@ class Parameters:
     price_diesel: float  # €/l
     hours_per_day: float  # h/d
     wage_semi: float  # €/d
-    wage_heavy: float  # €/d
+    wage_heavy: float
+
 
     @field_validator('*')
     def check_nonzero_members(cls, value):
