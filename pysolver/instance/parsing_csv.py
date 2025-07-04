@@ -99,14 +99,14 @@ def parse_routes_file(path: Path,
 
     return arcs
 
-def parse_instance_from_csv(nodes_path: Path, routes_path: Path, capacity_weight: float, capacity_volume: float, fleet_size: int, max_work_time: float, utility_other: float, maintenance_cost: float, price_elec: float, price_diesel: float, hours_per_day: float, wage_semi: float) -> Instance:
+def parse_instance_from_csv(nodes_path: Path, routes_path: Path, capacity_weight: float, capacity_volume: float, fleet_size: int, max_work_time: float, utility_other: float, maintenance_cost: float, price_elec: float, price_diesel: float, hours_per_day: float, wage_semi: float, wage_heavy: float) -> Instance:
     if capacity_weight is None or capacity_volume is None or fleet_size is None:
         raise ValueError("Capacity (weight & volume) and fleet_size must be provided")
 
     vertices = parse_nodes_file(nodes_path)
     arcs = parse_routes_file(routes_path, vertices)
 
-    parameters = Parameters(capacity_weight=capacity_weight, capacity_volume=capacity_volume, fleet_size=fleet_size, max_work_time = max_work_time, utility_other=utility_other, maintenance_cost=maintenance_cost, price_elec=price_elec, price_diesel=price_diesel, hours_per_day=hours_per_day, wage_semi=wage_semi)
+    parameters = Parameters(capacity_weight=capacity_weight, capacity_volume=capacity_volume, fleet_size=fleet_size, max_work_time = max_work_time, utility_other=utility_other, maintenance_cost=maintenance_cost, price_elec=price_elec, price_diesel=price_diesel, hours_per_day=hours_per_day, wage_semi=wage_semi, wage_heavy=wage_heavy)
 
 
     return Instance(parameters=parameters, vertices=vertices, arcs=arcs)

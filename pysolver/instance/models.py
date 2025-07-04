@@ -90,6 +90,7 @@ class Parameters:
     wage_heavy: float
 
 
+
     @field_validator('*')
     def check_nonzero_members(cls, value):
         if value <= 0.:

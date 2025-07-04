@@ -51,11 +51,17 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
         except ValueError:
             raise ValueError(f"{instance_path.name} is missing a FLEET_SECTION")
 
-    fleets: list[tuple[float, float, float, float]] = []  # (acq, cap_w, cap_v, range)
+    fleets: list[tuple[str, float, float, float, float,
+    float, float, float]] = []
+
     for ln in lines[fs_start:fs_end]:
-        # idx type cnt cap_w cap_v range acq
-        _, typ, cnt, vol, pay_w, acq_c, con_kWh, con_l, m_rng, main_c = ln.split()
-        fleets.append((float(acq_c), float(pay_w), float(vol), float(m_rng)))
+        # idx typ cnt vol pay_w acq_k€ cons_kWh cons_l max_rng maint_c
+        (_, typ, cnt,
+         vol, pay_w, acq, kwh, ltr, rng, maint) = ln.split()
+
+        fleets.append((typ,  float(vol), float(pay_w), float(acq),
+                        float(kwh), float(ltr), float(rng),
+                       float(maint)))
 
     # use the **first** vehicle type as legacy capacity defaults
     cap_w = fleets[0][1]

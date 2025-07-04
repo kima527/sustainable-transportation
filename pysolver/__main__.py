@@ -92,7 +92,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     py_instance, fleets = parse_instance(instance_path, return_fleets=True)
     cpp_instance = create_cpp_instance(py_instance)
 
-    veh_props = [(acq, cap_w, cap_v, rng) for (acq, cap_w, cap_v, rng) in fleets]
+    veh_props = [tuple(row) for row in fleets]
     CityParams = namedtuple("CityParams",
                             ["utility_other", "maintenance_cost",
                              "price_elec", "price_diesel",

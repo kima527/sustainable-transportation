@@ -58,6 +58,7 @@ def build_vrp(city: str, spec: dict):
     price_diesel=float(spec["Diesel price"])
     hours_per_day=float(spec["Average working hours per day"])
     wage_semi=float(spec["Average daily costs of semi-truck driver"])
+    wage_heavy=float(spec["Average daily costs of heavy-truck driver"])
 
 
     inst = parse_instance_from_csv(
@@ -72,7 +73,8 @@ def build_vrp(city: str, spec: dict):
         price_elec=price_elec,
         price_diesel=price_diesel,
         hours_per_day=hours_per_day,
-        wage_semi=wage_semi
+        wage_semi=wage_semi,
+        wage_heavy=wage_heavy
     )
 
     city_slug = city.lower()
