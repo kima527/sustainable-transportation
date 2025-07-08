@@ -32,6 +32,7 @@ def route_distance(route, py_instance):
 
 def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.HFVRPEvaluation):
     routes = list(solution.routes)
+    print(routes)
     print("=" * 100)
     print(f"ROUTE SUMMARY  |  Total Routes Used: {len(routes)}")
     print("=" * 100)
