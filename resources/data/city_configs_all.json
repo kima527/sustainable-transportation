@@ -1,0 +1,43 @@
+{
+  "Paris": {
+    "nodes_path": "paris.nodes",
+    "routes_path": "paris.routes",
+
+    "fleets": { "I": 50, "II": 50, "III": 50, "IV": 50, "V": 50, "VI": 50, "VII": 50 },
+
+    "Other utility cost": 398.65,
+    "Electricity price": 0.14,
+    "Diesel price": 1.44,
+    "Average working hours per day": 7.26,
+    "Average daily costs of semi-truck driver": 167.20,
+    "Average daily costs of heavy-truck driver": 173.60
+  },
+
+  "Shanghai": {
+    "nodes_path": "shanghai.nodes",
+    "routes_path": "shanghai.routes",
+
+    "fleets": { "I": 50, "II": 50, "III": 50, "IV": 50, "V": 50, "VI": 50, "VII": 50 },
+
+    "Other utility cost": 291.71,
+    "Electricity price": 0.10,
+    "Diesel price": 0.77,
+    "Average working hours per day": 8.94,
+    "Average daily costs of semi-truck driver": 62.40,
+    "Average daily costs of heavy-truck driver": 71.60
+  },
+
+  "NewYork": {
+    "nodes_path": "newyork.nodes",
+    "routes_path": "newyork.routes",
+
+    "fleets": { "I": 50, "II": 50, "III": 50, "IV": 50, "V": 50, "VI": 50, "VII": 50 },
+
+    "Other utility cost": 235.46,
+    "Electricity price": 0.11,
+    "Diesel price": 0.63,
+    "Average working hours per day": 8.06,
+    "Average daily costs of semi-truck driver": 230.80,
+    "Average daily costs of heavy-truck driver": 215.60
+  }
+}
