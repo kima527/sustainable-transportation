@@ -52,7 +52,7 @@ def build_vrp(city: str, spec: dict):
     cap_volume = fleet_rows[0]["vol"]
     fleet_size = sum(row["cnt"] for row in fleet_rows)
     max_work_time=3600 * float(spec["Average working hours per day"])
-    utility_other=float(spec["Other utility cost"] / fleet_size)
+    utility_other=float(spec["Other utility cost"])
     maintenance_cost=fleet_rows[0]["main_c"]
     price_elec=float(spec["Electricity price"])
     price_diesel=float(spec["Diesel price"])
@@ -131,6 +131,12 @@ def build_vrp(city: str, spec: dict):
         f.write("\nDEPOT_SECTION\n")
         f.write(f"{inst.depot.vertex_id + 1}\n-1\n")
         f.write("EOF\n")
+
+        # ---- service time ---------------------------------------------------------
+        f.write("SERVICE_TIME_SECTION\n")
+        for v in inst.vertices:  # depot first, then customers
+            f.write(f"{v.vertex_id + 1} {v.service_time}\n")
+        f.write("END_SERVICE_TIME_SECTION\n\n")
 
     print(f"✅ {city}:  {vrp_path.name}, {id_map_path.name} written")
 

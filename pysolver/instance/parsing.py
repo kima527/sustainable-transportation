@@ -118,6 +118,16 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
     avg_work_h = city.get("hours_per_day", 8.0)
     max_work_sec = 3600.0 * avg_work_h
 
+    if "SERVICE_TIME_SECTION" in lines:
+        st_s = lines.index("SERVICE_TIME_SECTION") + 1
+        st_e = lines.index("END_SERVICE_TIME_SECTION")
+        for ln in lines[st_s:st_e]:
+            vid, sec = ln.split()
+            vertices[int(vid) - 1].service_time = float(sec)
+    else:
+        for v in vertices[1:]:
+            v.service_time = 900
+
     # === 3. Parameters ===
     parameters = Parameters(
         capacity_weight=cap_w,

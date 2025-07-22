@@ -30,6 +30,13 @@ def parse_nodes_file(path: Path) -> list[Vertex]:
         lat = float(row['Lat'])
         weight = int(row['Demand[kg]'])
         volume = float(row['Demand[m^3*10^-3]'])
+        service_time_row = row["Duration"]
+        if pd.isna(service_time_row):
+            service_time = 0.0
+        elif isinstance(service_time_row, str) and ":" in service_time_row:
+            service_time = _hhmmss_to_seconds(service_time_row)
+        else:
+            service_time = float(service_time_row)
 
         vertex_type = VertexType.Depot if name.startswith("D") else VertexType.Customer
 
@@ -41,7 +48,7 @@ def parse_nodes_file(path: Path) -> list[Vertex]:
             y_coord=lat,
             demand_weight=weight,
             demand_volume=volume,
-            service_time=15.0*60 #second
+            service_time=service_time #second
         ))
 
     return vertices

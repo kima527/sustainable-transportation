@@ -18,7 +18,6 @@ namespace py = pybind11;                 // NEW  ← lets us write py::arg()
 #    define ROUTINGBLOCKS_EXT_MODULE_VERSION "dev"
 #endif
 
-constexpr resource_t SERVICE_SEC = 15 * 60;          // 15 min unloading
 
 struct FleetRow {                     // ❶  keep type code for printing
     std::string typ;
@@ -64,8 +63,9 @@ struct HFVRP_backward_label {
 struct HFVRP_vertex_data {
     resource_t demand_weight;
     resource_t demand_volume;
-    HFVRP_vertex_data(resource_t w, resource_t v)
-        : demand_weight(w), demand_volume(v) {}
+    resource_t service_time;
+    HFVRP_vertex_data(resource_t w, resource_t v, resource_t s)
+        : demand_weight(w), demand_volume(v), service_time(s) {}
 };
 
 struct HFVRP_arc_data {
@@ -186,6 +186,10 @@ class HFVRPEvaluation
             _fleet[k].cons_kWh* price_elec   * dist;         // electricity (if BEV)
         auto maint_cost = _fleet[k].maint_km * dist;
 
+        // wage €/h  (JSON already gives €/h)
+        const auto wage_rate = (_fleet[k].cap_w > 3500 ? wage_heavy : wage_semi);
+        const auto wage_cost = (t / 3600.0) * wage_rate;          // t is seconds
+
         /* --------- penalties / overload ----------------------------- */
         auto ow   = std::max<resource_t>(0, w - _fleet[k].cap_w);
         auto ov   = std::max<resource_t>(0, v - _fleet[k].cap_v);
@@ -193,9 +197,9 @@ class HFVRPEvaluation
         auto ot   = std::max<resource_t>(0, t - max_work_time);
 
         /* --------- total -------------------------------------------- */
-        return  utility_other                                /* fixed €/d      */
-              + fuel_cost + maint_cost                 /* variable €/km  */
-              + ow   * _overload_penalty_factor + ov   * _overload_penalty_factor      /* overload pens. */
+        return  fuel_cost + maint_cost + wage_cost                /* variable €/km  */
+              + ow   * _overload_penalty_factor
+              + ov   * _overload_penalty_factor      /* overload pens. */
               + orng * _range_excess_penalty_factor
               + ot   * _worktime_penalty_factor;
     }
@@ -224,14 +228,8 @@ class HFVRPEvaluation
                                          f.load_volume+b.load_volume,
                                          f.work_time +b.work_time);
 
-
-        // Charge the fixed costs *only* when we leave the depot (pred.is_depot)
-        cost_t fixed = 0;
-        if (pred.is_depot) {
-            const auto wage = (_fleet[vid].cap_w > 3500 ? wage_heavy : wage_semi);
-            fixed = utility_other + wage;
-        }
-        return var_cost + fixed;
+         cost_t fixed = pred.is_depot ? utility_other : 0.0;
+    return var_cost + fixed;
     }
 
     std::vector<resource_t>
@@ -270,9 +268,12 @@ class HFVRPEvaluation
             auto vid = _best_vehicle(label.distance, label.load_weight, label.load_volume, label.work_time).first;
             auto cost = _compute_cost_for_vehicle_id(vid, label.distance, label.load_weight, label.load_volume, label.work_time);
 
+            cost_t fixed = (route.size() > 2) ? utility_other : 0.0;
+
             py::dict result;
             result["vehicle_type"] = _fleet[vid].typ;    // e.g. "I"
             result["cost"] = cost;
+            result["fixed_cost"] = fixed;
             result["distance"] = label.distance;
             result["duration"] = label.work_time;
             result["load_weight"] = label.load_weight;
@@ -295,7 +296,7 @@ class HFVRPEvaluation
                 p.load_weight + vdat.demand_weight,
                 p.load_volume + vdat.demand_volume,
                 p.work_time   + ad.travel_time
-                              + (v.is_depot ? 0 : SERVICE_SEC)};
+                              + (v.is_depot ? 0 : vdat.service_time)};
     }
 
     HFVRP_backward_label propagate_backward(
@@ -308,13 +309,13 @@ class HFVRPEvaluation
         return {s.distance + ad.distance,
                 s.load_weight + sdat.demand_weight,
                 s.load_volume + sdat.demand_volume,
-                s.work_time   + ad.travel_time + SERVICE_SEC};
+                s.work_time   + ad.travel_time + sdat.service_time};
     }
 
     HFVRP_forward_label create_forward_label(
         const routingblocks::Vertex& v, const HFVRP_vertex_data& d) {
         return {0, d.demand_weight, d.demand_volume,
-                v.is_depot ? 0 : SERVICE_SEC};
+                v.is_depot ? 0 : d.service_time};
     }
     HFVRP_backward_label create_backward_label(
         const routingblocks::Vertex&, const HFVRP_vertex_data&) {
@@ -343,9 +344,10 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
        2)  Small helper structs that travel through the algorithm
     -------------------------------------------------------------- */
     py::class_<HFVRP_vertex_data>(m, "HFVRPVertexData")
-    .def(py::init<resource_t, resource_t>(),
+    .def(py::init<resource_t, resource_t, resource_t>(),
          py::arg("demand_weight") = 0.0,
-         py::arg("demand_volume") = 0.0)
+         py::arg("demand_volume") = 0.0,
+         py::arg("service_time")  = 0.0)
     .def_readonly("demand_weight", &HFVRP_vertex_data::demand_weight)
     .def_readonly("demand_volume", &HFVRP_vertex_data::demand_volume);
 
