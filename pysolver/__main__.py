@@ -2,6 +2,8 @@ from pathlib import Path
 import random
 
 import click
+import numpy as np
+
 import routingblocks as rb
 import routingblocks_bais_as as rb_ext
 from collections import namedtuple
@@ -95,8 +97,9 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
 def main(instance_path: Path, output_path: Path, seed: int):
     # set random number generator seed to ensure deterministic behavior for reproducibility
     if seed is None:
-        seed = random.randint(0, 10000)
+        seed = 0
     random.seed(seed)
+    np.random.seed(seed)
     cpp_random = rb.Random(seed)
 
     instance_path = Path(instance_path)

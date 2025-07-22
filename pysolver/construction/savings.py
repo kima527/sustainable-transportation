@@ -27,8 +27,9 @@ def savings(py_instance: Instance, evaluation: HFVRPEvaluation,
             else:
                 s_ij = py_instance.arcs[(c_i, 0)].cost + py_instance.arcs[(0, c_j)].cost - py_instance.arcs[
                     (c_i, c_j)].cost
+                s_ij = round(s_ij, 6)
                 savings.append((s_ij, c_i, c_j))
-    savings.sort(reverse=True)
+    savings.sort(key=lambda x: (-x[0], x[1], x[2]))
 
     for s_ij, c_i, c_j in savings:
         if s_ij <= 0:
