@@ -30,8 +30,19 @@ def route_distance(route, py_instance):
         distance += py_instance.arcs[(u, v)].distance  # or .cost if 'distance' doesn't exist
     return distance
 
+def _compactify(sol: rb.Solution) -> None:
+    i = 0
+    while i < len(sol):
+        if len(sol[i]) <= 2:              # depot → depot
+            sol.remove_route(sol[i])
+        else:
+            i += 1
+
 def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.HFVRPEvaluation):
-    routes = list(solution.routes)
+    _compactify(solution)                          # <<< purge first
+
+    routes = [r for r in solution.routes if len(r) > 2]
+
     print(routes)
     print("=" * 100)
     print(f"ROUTE SUMMARY  |  Total Routes Used: {len(routes)}")
