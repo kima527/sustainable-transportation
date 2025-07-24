@@ -81,6 +81,7 @@ def parse_routes_file(path: Path,
 
         # -------- distance (km) -------------------------------
         dist_km = float(row["DistanceTotal[km]"])
+        dist_inside = float(row["DistanceInside[km]"])
 
         # -------- travel-time (sec) ---------------------------
         dur_raw = row["Duration[s]"]
@@ -92,7 +93,8 @@ def parse_routes_file(path: Path,
             dur_sec = float(dur_raw)          # already seconds
 
         arcs[(i, j)] = Arc(distance=dist_km,
-                           duration=dur_sec)   #  ← stored!
+                           duration=dur_sec,
+                           inside_km=dist_inside)   #  ← stored!
 
     # ---------- fill missing (i,i) and ∞-arcs -----------------
     ids = [v.vertex_id for v in vertices]
@@ -101,7 +103,8 @@ def parse_routes_file(path: Path,
             if (u, v) not in arcs:
                 arcs[(u, v)] = Arc(
                     distance=0.0 if u == v else float("inf"),
-                    duration=0.0 if u == v else float("inf")
+                    duration=0.0 if u == v else float("inf"),
+                    inside_km=0.0
                 )
 
     return arcs

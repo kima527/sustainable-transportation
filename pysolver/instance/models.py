@@ -63,6 +63,7 @@ class Vertex:
 class Arc:
     distance: float
     duration: float
+    inside_km: float = 0.0
 
     @field_validator('*')
     def check_nonzero_members(cls, value):

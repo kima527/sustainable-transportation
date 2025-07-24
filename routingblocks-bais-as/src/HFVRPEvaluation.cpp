@@ -40,24 +40,26 @@ struct CityParams {
 
 struct HFVRP_forward_label {
     resource_t distance;
+    resource_t inside_km;
     resource_t load_weight;
     resource_t load_volume;
     resource_t work_time;
 
-    HFVRP_forward_label(resource_t d, resource_t w, resource_t v,
+    HFVRP_forward_label(resource_t d, resource_t in, resource_t w, resource_t v,
                         resource_t t)
-        : distance(d), load_weight(w), load_volume(v), work_time(t) {}
+        : distance(d), inside_km(in), load_weight(w), load_volume(v), work_time(t) {}
 };
 
 struct HFVRP_backward_label {
     resource_t distance;
+    resource_t inside_km;
     resource_t load_weight;
     resource_t load_volume;
     resource_t work_time;
 
-    HFVRP_backward_label(resource_t d, resource_t w, resource_t v,
-                         resource_t t)                 // FIX  — add ‘t’
-        : distance(d), load_weight(w), load_volume(v), work_time(t) {}
+    HFVRP_backward_label(resource_t d, resource_t in, resource_t w, resource_t v,
+                         resource_t t)
+        : distance(d), inside_km(in), load_weight(w), load_volume(v), work_time(t) {}
 };
 
 struct HFVRP_vertex_data {
@@ -71,7 +73,8 @@ struct HFVRP_vertex_data {
 struct HFVRP_arc_data {
     resource_t distance;
     resource_t travel_time;
-    HFVRP_arc_data(resource_t d, resource_t t) : distance(d), travel_time(t) {}
+    resource_t inside_km;
+    HFVRP_arc_data(resource_t d, resource_t t, resource_t in) : distance(d), travel_time(t), inside_km(in) {}
 };
 
 class HFVRPEvaluation
@@ -80,18 +83,21 @@ class HFVRPEvaluation
               HFVRP_vertex_data, HFVRP_arc_data> {
   std::vector<FleetRow> _fleet;
   resource_t            _max_work_time;
+  resource_t toll_per_km_inside = 0.0;
+
   public:
     std::vector<std::string> _typ;
     std::vector<resource_t> acq, cap_w, cap_v,
                             rng, cons_kWh, cons_l, maint_km;
     enum CostComponent { DIST = 0, RANGE = 1, OVER_W = 2,
-                         OVER_V = 3, OVERTIME = 4 };
+                         OVER_V = 3, OVERTIME = 4, INSIDE_KM=5 };
     size_t choose_vehicle(resource_t dist,
+                      resource_t inside_km,
                       resource_t load_w,
                       resource_t load_v,
                       resource_t work_t) const
     {
-        return _best_vehicle(dist, load_w, load_v, work_t).first;
+        return _best_vehicle(dist, inside_km, load_w, load_v, work_t).first;
     }
 
   private:
@@ -174,11 +180,12 @@ class HFVRPEvaluation
         hours_per_day    = get("hours_per_day", 8.0);
         wage_semi        = get("wage_semi");
         wage_heavy       = get("wage_heavy");
+        toll_per_km_inside = get("toll_per_km_inside", 0.0);
     }
 
   private:
     cost_t _compute_cost_for_vehicle_id(size_t k,
-                                        resource_t dist, resource_t w,
+                                        resource_t dist, resource_t inside_km, resource_t w,
                                         resource_t v, resource_t t) const {
         /* --------- variable costs ----------------------------------- */
         auto fuel_cost =
@@ -190,6 +197,10 @@ class HFVRPEvaluation
         const auto wage_rate = (_fleet[k].cap_w > 3500 ? wage_heavy : wage_semi);
         const auto wage_cost = (t / 3600.0) * wage_rate;          // t is seconds
 
+        // toll
+        resource_t toll_cost = 0.0;
+        toll_cost = inside_km * toll_per_km_inside;
+
         /* --------- penalties / overload ----------------------------- */
         auto ow   = std::max<resource_t>(0, w - _fleet[k].cap_w);
         auto ov   = std::max<resource_t>(0, v - _fleet[k].cap_v);
@@ -197,7 +208,7 @@ class HFVRPEvaluation
         auto ot   = std::max<resource_t>(0, t - max_work_time);
 
         /* --------- total -------------------------------------------- */
-        return  fuel_cost + maint_cost + wage_cost                /* variable €/km  */
+        return  fuel_cost + maint_cost + wage_cost + toll_cost               /* variable €/km  */
               + ow   * _overload_penalty_factor
               + ov   * _overload_penalty_factor      /* overload pens. */
               + orng * _range_excess_penalty_factor
@@ -205,11 +216,11 @@ class HFVRPEvaluation
     }
 
     std::pair<size_t, cost_t>
-    _best_vehicle(resource_t d, resource_t w, resource_t v, resource_t t) const {
+    _best_vehicle(resource_t d, resource_t in, resource_t w, resource_t v, resource_t t) const {
         size_t best = 0;
-        auto bestc = _compute_cost_for_vehicle_id(0, d, w, v, t);
+        auto bestc = _compute_cost_for_vehicle_id(0, d, in, w, v, t);
         for (size_t k = 1; k < num_veh; ++k) {
-            auto c = _compute_cost_for_vehicle_id(k, d, w, v, t);
+            auto c = _compute_cost_for_vehicle_id(k, d, in, w, v, t);
             if (c < bestc) { bestc = c; best = k; }
         }
         return {best, bestc};
@@ -224,6 +235,7 @@ class HFVRPEvaluation
                        const HFVRP_vertex_data& pred_dat) {
 
         auto [vid, var_cost] = _best_vehicle(f.distance+b.distance,
+                                         f.inside_km+b.inside_km,
                                          f.load_weight+b.load_weight,
                                          f.load_volume+b.load_volume,
                                          f.work_time +b.work_time);
@@ -234,22 +246,23 @@ class HFVRPEvaluation
 
     std::vector<resource_t>
     get_cost_components(const HFVRP_forward_label& f) const {
-        auto k = _best_vehicle(f.distance, f.load_weight,
+        auto k = _best_vehicle(f.distance, f.inside_km, f.load_weight,
                                f.load_volume, f.work_time).first;
-        return {f.distance,
+        return {f.distance, f.inside_km,
                 std::max<resource_t>(0, f.distance   - _fleet[k].rng),
                 std::max<resource_t>(0, f.load_weight- _fleet[k].cap_w),
                 std::max<resource_t>(0, f.load_volume- _fleet[k].cap_v),
-                std::max<resource_t>(0, f.work_time  - max_work_time)};
+                std::max<resource_t>(0, f.work_time  - max_work_time)
+                };
     }
 
     cost_t compute_cost(const HFVRP_forward_label& f) const {
-        return _best_vehicle(f.distance, f.load_weight,
+        return _best_vehicle(f.distance, f.inside_km, f.load_weight,
                              f.load_volume, f.work_time).second;
     }
 
     bool is_feasible(const HFVRP_forward_label& f) const {
-        auto k = _best_vehicle(f.distance, f.load_weight,
+        auto k = _best_vehicle(f.distance, f.inside_km, f.load_weight,
                                f.load_volume, f.work_time).first;
         return f.load_weight <= _fleet[k].cap_w && f.load_volume <= _fleet[k].cap_v
                && f.distance <= _fleet[k].rng   && f.work_time <= max_work_time;
@@ -258,15 +271,15 @@ class HFVRPEvaluation
     size_t compute_best_vehicle_id_of_route(
         const routingblocks::Route& r) const {
         const auto& f = r.end_depot().operator*().forward_label().get<HFVRP_forward_label>();
-        return _best_vehicle(f.distance, f.load_weight,
+        return _best_vehicle(f.distance, f.inside_km, f.load_weight,
                              f.load_volume, f.work_time).first;
     }
 
     public:
         py::dict summarize_route(const routingblocks::Route& route) const {
             const auto& label = route.end_depot().operator*().forward_label().get<HFVRP_forward_label>();
-            auto vid = _best_vehicle(label.distance, label.load_weight, label.load_volume, label.work_time).first;
-            auto cost = _compute_cost_for_vehicle_id(vid, label.distance, label.load_weight, label.load_volume, label.work_time);
+            auto vid = _best_vehicle(label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time).first;
+            auto cost = _compute_cost_for_vehicle_id(vid, label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time);
 
             cost_t fixed = (route.size() > 2) ? utility_other : 0.0;
 
@@ -280,6 +293,8 @@ class HFVRPEvaluation
             result["load_volume"] = label.load_volume;
             result["capacity_weight"] = _fleet[vid].cap_w;
             result["capacity_volume"] = _fleet[vid].cap_v;
+            result["inside_km"] = label.inside_km;
+            result["toll_cost"] = toll_per_km_inside * label.inside_km;
             return result;
         }
 
@@ -293,6 +308,7 @@ class HFVRPEvaluation
         const routingblocks::Arc&, const HFVRP_arc_data& ad) const {
 
         return {p.distance + ad.distance,
+                p.inside_km  + ad.inside_km,
                 p.load_weight + vdat.demand_weight,
                 p.load_volume + vdat.demand_volume,
                 p.work_time   + ad.travel_time
@@ -307,6 +323,7 @@ class HFVRPEvaluation
         const HFVRP_arc_data& ad) const {
 
         return {s.distance + ad.distance,
+                s.inside_km  + ad.inside_km,
                 s.load_weight + sdat.demand_weight,
                 s.load_volume + sdat.demand_volume,
                 s.work_time   + ad.travel_time + sdat.service_time};
@@ -314,12 +331,12 @@ class HFVRPEvaluation
 
     HFVRP_forward_label create_forward_label(
         const routingblocks::Vertex& v, const HFVRP_vertex_data& d) {
-        return {0, d.demand_weight, d.demand_volume,
+        return {0, 0, d.demand_weight, d.demand_volume,
                 v.is_depot ? 0 : d.service_time};
     }
     HFVRP_backward_label create_backward_label(
         const routingblocks::Vertex&, const HFVRP_vertex_data&) {
-        return {0, 0, 0, 0};
+        return {0, 0, 0, 0, 0};
     }
 };
 
@@ -349,24 +366,26 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
          py::arg("demand_volume") = 0.0,
          py::arg("service_time")  = 0.0)
     .def_readonly("demand_weight", &HFVRP_vertex_data::demand_weight)
-    .def_readonly("demand_volume", &HFVRP_vertex_data::demand_volume);
+    .def_readonly("demand_volume", &HFVRP_vertex_data::demand_volume)
+    .def_readonly("service_time",  &HFVRP_vertex_data::service_time);
 
     py::class_<HFVRP_arc_data>(m, "HFVRPArcData")
-        .def(py::init<resource_t, resource_t>(),
-             py::arg("distance"), py::arg("travel_time"))
-        .def_property_readonly("distance",
-             [](const HFVRP_arc_data& a){ return a.distance; })
-        .def_property_readonly("travel_time",
-             [](const HFVRP_arc_data& a){ return a.travel_time; });
+        .def(py::init<resource_t, resource_t, resource_t>(),
+             py::arg("distance"), py::arg("travel_time"), py::arg("inside_km"))
+        .def_property_readonly("distance",    [](const HFVRP_arc_data& a){ return a.distance; })
+        .def_property_readonly("travel_time", [](const HFVRP_arc_data& a){ return a.travel_time; })
+        .def_property_readonly("inside_km",   [](const HFVRP_arc_data& a){ return a.inside_km; });
 
     py::class_<HFVRP_forward_label>(m, "HFVRPForwardLabel")
         .def_property_readonly("distance",    [](const HFVRP_forward_label& l){ return l.distance; })
+        .def_property_readonly("inside_km",   [](const HFVRP_forward_label& l){ return l.inside_km; })
         .def_property_readonly("load_weight", [](const HFVRP_forward_label& l){ return l.load_weight; })
         .def_property_readonly("load_volume", [](const HFVRP_forward_label& l){ return l.load_volume; })
         .def_property_readonly("work_time",   [](const HFVRP_forward_label& l){ return l.work_time; });
 
     py::class_<HFVRP_backward_label>(m, "HFVRPBackwardLabel")
         .def_property_readonly("distance",    [](const HFVRP_backward_label& l){ return l.distance; })
+        .def_property_readonly("inside_km",   [](const HFVRP_backward_label& l){ return l.inside_km; })
         .def_property_readonly("load_weight", [](const HFVRP_backward_label& l){ return l.load_weight; })
         .def_property_readonly("load_volume", [](const HFVRP_backward_label& l){ return l.load_volume; })
         .def_property_readonly("work_time",   [](const HFVRP_backward_label& l){ return l.work_time; });
@@ -380,8 +399,11 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
              py::arg("max_work_time_sec"),
              py::arg("city_params"))
         .def("choose_vehicle", &HFVRPEvaluation::choose_vehicle,
-             py::arg("distance"), py::arg("load_weight"),
-             py::arg("load_volume"), py::arg("work_time"))
+             py::arg("inside_km"),
+             py::arg("distance"),
+             py::arg("load_weight"),
+             py::arg("load_volume"),
+             py::arg("work_time"))
         .def("concatenate",                     &HFVRPEvaluation::concatenate)
         .def("compute_cost",                    &HFVRPEvaluation::compute_cost)
         .def("compute_best_vehicle_id_of_route",&HFVRPEvaluation::compute_best_vehicle_id_of_route)

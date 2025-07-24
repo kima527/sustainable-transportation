@@ -55,7 +55,7 @@ def savings(py_instance: Instance, evaluation: HFVRPEvaluation,
         new_v = capacity_v[ri] + capacity_v[rj]
 
         # choose the cheapest vehicle _after_ merge
-        vid = evaluation.choose_vehicle(0.0, new_w, new_v, 0.0)  # matter for capacity test
+        vid = evaluation.choose_vehicle(0.0, 0.0, new_w, new_v, 0.0)  # matter for capacity test
 
         if (new_w > evaluation.cap_w[vid] or
                 new_v > evaluation.cap_v[vid]):

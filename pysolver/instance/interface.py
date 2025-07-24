@@ -42,7 +42,7 @@ def hfvrp_vertex_data_factory(v: Vertex) -> rb_ext.HFVRPVertexData:
 
 def hfvrp_arc_data_factory(a: Arc) -> rb_ext.HFVRPArcData:
     """Build the C++ arc-payload (distance & travel-time)."""
-    return rb_ext.HFVRPArcData(a.distance, a.duration)
+    return rb_ext.HFVRPArcData(a.distance, a.duration, a.inside_km)
 
 def cvrp_arc_data_factory(arc: Arc) -> rb_ext.CVRPArcData:
     return rb_ext.CVRPArcData(arc.distance)

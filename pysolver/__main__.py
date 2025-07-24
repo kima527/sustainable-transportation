@@ -40,18 +40,26 @@ def _compactify(sol: rb.Solution) -> None:
         else:
             i += 1
 
-def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.HFVRPEvaluation):
+def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.HFVRPEvaluation, toll):
     _compactify(solution)                          # <<< purge first
 
     routes = [r for r in solution.routes if len(r) > 2]
 
     print(routes)
-    print("=" * 100)
-    print(f"ROUTE SUMMARY  |  Total Routes Used: {len(routes)}")
-    print("=" * 100)
-    print(f"{'Route':<10} {'#Cust.':<10} {'Cost(€)':<10} {'Dist.(km)':<10} {'Dur.(min)':<10} "
+    print("=" * 110)
+    print(f"ROUTE SUMMARY  |  Total Routes Used: {len(routes)} | Toll: {toll}€/km")
+    print("=" * 110)
+    print(f"{'Route':<10} {'#Cust.':<10} {'Cost(€)':<10} {'Dist.(km)':<10} {'Dist_in(km)':<10} {'toll(€)':<10} {'Dur.(min)':<10} "
           f"{'Veh.Type':<10} {'Util.W':<10} {'Util.V':<10}")
-    print("-" * 100)
+    print("-" * 110)
+
+    # ------------------------------------------------------------------
+    #  ❑  Accumulators for the grand totals / averages
+    # ------------------------------------------------------------------
+    total_cust = total_cost = total_dist = total_in = total_toll = total_dur = 0.0
+    sum_w_util = sum_v_util = 0.0
+    route_count = 0
+    # ------------------------------------------------------------------
 
     for idx, route in enumerate(routes):
         if len(route) <= 2:
@@ -65,6 +73,8 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
             num_customers = len(route) - 2
             cost = summary["cost"]
             distance = summary["distance"]
+            dist_inside = summary["inside_km"]
+            toll_cost = summary["toll_cost"]
             duration = summary["duration"] / 60  # seconds → min
             vehicle_type = summary["vehicle_type"]
 
@@ -72,14 +82,35 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
                            if summary["capacity_weight"] > 0 else 0.0)
             volume_util = (summary["load_volume"] / summary["capacity_volume"]
                            if summary["capacity_volume"] > 0 else 0.0)
+            total_cust += num_customers
+            total_cost += cost
+            total_dist += distance
+            total_in += dist_inside
+            total_toll += toll_cost
+            total_dur += duration
+            sum_w_util += weight_util
+            sum_v_util += volume_util
+            route_count += 1
 
-            print(f"{route_id:<10} {num_customers:<10} €{cost:<10.2f} {distance:<10.1f} "
-                  f"{duration:<10.1f} {vehicle_type:<10} {weight_util:<10.1%} {volume_util:<10.1%}")
 
+            if route_count:  # avoid division by 0
+                avg_w = sum_w_util / route_count
+                avg_v = sum_v_util / route_count
+            else:
+                avg_w = avg_v = 0.0
+
+            print(f"{route_id:<10} {num_customers:<10} €{cost:<10.2f} {distance:<10.1f} {dist_inside:<10.1f} "
+                  f"€{toll_cost:<10.2f} {duration:<10.1f} {vehicle_type:<10} {weight_util:<10.1%} {volume_util:<10.1%}")
         except Exception as e:
             print(f"[ERROR] Failed to summarize Route {idx + 1}: {e}")
 
-    print("=" * 100)
+    print("=" * 110)
+    print(f"{'TOTAL':<10} {int(total_cust):<10} "
+          f"€{round(total_cost,2):<10} {total_dist:<10.1f} {total_in:<10.1f} "
+          f"€{total_toll:<10.2f} {total_dur:<10.1f} "
+          f"{'':<10} {avg_w:<10.1%} {avg_v:<10.1%}")
+
+    print("=" * 110)
 
 
 # def print_vt_id_and_routes(evaluation: rb_ext.CVRPEvaluation, solution: rb.Solution):
@@ -111,10 +142,10 @@ def main(instance_path: Path, output_path: Path, seed: int):
     CityParams = namedtuple("CityParams",
                             ["utility_other", "maintenance_cost",
                              "price_elec", "price_diesel",
-                             "hours_per_day", "wage_semi", "wage_heavy"])
+                             "hours_per_day", "wage_semi", "wage_heavy", "toll_per_km_inside"])
 
     p = py_instance.parameters
-    city = CityParams(
+    base_city = CityParams(
         p.utility_other,
         p.maintenance_cost,
         p.price_elec,
@@ -122,7 +153,11 @@ def main(instance_path: Path, output_path: Path, seed: int):
         p.hours_per_day,
         p.wage_semi,
         p.wage_heavy,
+        0.0,  # default toll, will be overwritten in loop
     )
+    toll = 0.40
+    city = base_city._replace(toll_per_km_inside=toll)
+
     evaluation = rb_ext.HFVRPEvaluation(veh_props, p.max_work_time, city._asdict())
 
     # 0. check routingblocks working properly
@@ -148,7 +183,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     ls_engine.improve(lns_savings_solution)
     print_solution_info("LocalSearch", lns_savings_solution)
 
-    print_route_summary(py_instance, lns_savings_solution, evaluation)
+    print_route_summary(py_instance, lns_savings_solution, evaluation, toll)
     # 6. metaheuristic (ALNS)
 
     # 7. custom operator (ALNS)
