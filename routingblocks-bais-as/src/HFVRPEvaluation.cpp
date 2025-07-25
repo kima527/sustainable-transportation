@@ -306,6 +306,9 @@ class HFVRPEvaluation
 
             cost_t fixed = (route.size() > 2) ? utility_other : 0.0;
 
+            const std::string& veh_type = _fleet[vid].typ;
+            const bool is_icev = (veh_type == "I" || veh_type == "II" || veh_type == "III");
+
             py::dict result;
             result["vehicle_type"] = _fleet[vid].typ;    // e.g. "I"
             result["cost"] = cost;
@@ -317,7 +320,7 @@ class HFVRPEvaluation
             result["capacity_weight"] = _fleet[vid].cap_w;
             result["capacity_volume"] = _fleet[vid].cap_v;
             result["inside_km"] = label.inside_km;
-            result["toll_cost"] = toll_per_km_inside * label.inside_km;
+            result["toll_cost"] = (is_icev ? toll_per_km_inside * label.inside_km : 0.0);
             return result;
         }
 
