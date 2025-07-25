@@ -187,6 +187,29 @@ class HFVRPEvaluation
     cost_t _compute_cost_for_vehicle_id(size_t k,
                                         resource_t dist, resource_t inside_km, resource_t w,
                                         resource_t v, resource_t t) const {
+
+        /* --------- determine ICEV vs BEV by type -------------------- */
+        const std::string& veh_type = _fleet[k].typ;
+        const bool is_icev = (veh_type == "I" || veh_type == "II" ||
+                              veh_type == "III");
+
+        /* --------- acquisition cost -> TCO logic -------------------- */
+        resource_t amortized_acq_cost = 0.0;
+        if (veh_type == "IV") {
+            // Special case: leased vehicle (990€/month) with 250/12 working days per month
+            amortized_acq_cost = 990.0 / 20.83;
+        } else {
+            // Normal case: purchase, depreciated over 4 years
+            constexpr double RESALE_ICEV = 0.5;
+            constexpr double RESALE_BEV  = 0.45;
+            constexpr int LIFETIME_YEARS = 4;
+            constexpr int WORKDAYS_PER_YEAR = 250;
+            constexpr int TOTAL_DAYS = LIFETIME_YEARS * WORKDAYS_PER_YEAR;
+
+            const double resale_rate = is_icev ? RESALE_ICEV : RESALE_BEV;
+            amortized_acq_cost = (_fleet[k].acq * (1.0 - resale_rate)) / TOTAL_DAYS;
+        }
+
         /* --------- variable costs ----------------------------------- */
         auto fuel_cost =
             _fleet[k].cons_l  * price_diesel * dist +        // diesel
@@ -198,8 +221,7 @@ class HFVRPEvaluation
         const auto wage_cost = (t / 3600.0) * wage_rate;          // t is seconds
 
         // toll
-        resource_t toll_cost = 0.0;
-        toll_cost = inside_km * toll_per_km_inside;
+        resource_t toll_cost = is_icev ? inside_km * toll_per_km_inside : 0.0;
 
         /* --------- penalties / overload ----------------------------- */
         auto ow   = std::max<resource_t>(0, w - _fleet[k].cap_w);
@@ -208,7 +230,8 @@ class HFVRPEvaluation
         auto ot   = std::max<resource_t>(0, t - max_work_time);
 
         /* --------- total -------------------------------------------- */
-        return  fuel_cost + maint_cost + wage_cost + toll_cost               /* variable €/km  */
+        return  fuel_cost + maint_cost + wage_cost + toll_cost
+              + amortized_acq_cost  /* acq_c per day   */
               + ow   * _overload_penalty_factor
               + ov   * _overload_penalty_factor      /* overload pens. */
               + orng * _range_excess_penalty_factor

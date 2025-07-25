@@ -155,7 +155,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
         p.wage_heavy,
         0.0,  # default toll, will be overwritten in loop
     )
-    toll = 0.40
+    toll = 0.4
     city = base_city._replace(toll_per_km_inside=toll)
 
     evaluation = rb_ext.HFVRPEvaluation(veh_props, p.max_work_time, city._asdict())
