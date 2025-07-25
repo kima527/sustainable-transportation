@@ -13,12 +13,12 @@ FLEET_SECTION
 END_FLEET_SECTION
 
 CITY_INFO_SECTION
-Other utility cost : 1.14
+Other utility cost : 31
 Electricity price : 0.14
 Diesel price : 1.44
 Average working hours per day : 7.26
-Average daily costs of semi-truck driver : 167.2
-Average daily costs of heavy-truck driver : 173.6
+Average hourly costs of semi-truck driver : 23
+Average hourly costs of heavy-truck driver : 23.91
 END_CITY_INFO_SECTION
 
 NODE_COORD_SECTION

@@ -57,8 +57,8 @@ def build_vrp(city: str, spec: dict):
     price_elec=float(spec["Electricity price"])
     price_diesel=float(spec["Diesel price"])
     hours_per_day=float(spec["Average working hours per day"])
-    wage_semi=float(spec["Average daily costs of semi-truck driver"])
-    wage_heavy=float(spec["Average daily costs of heavy-truck driver"])
+    wage_semi=float(spec["Average hourly costs of semi-truck driver"])
+    wage_heavy=float(spec["Average hourly costs of heavy-truck driver"])
 
 
     inst = parse_instance_from_csv(
@@ -105,9 +105,9 @@ def build_vrp(city: str, spec: dict):
                     f"{row['main_c']} \n")
         f.write("END_FLEET_SECTION\n\n")
 
-        spec["Other utility cost"] = (
-                round(float(spec["Other utility cost"]) / fleet_size,2)
-        )
+        # spec["Other utility cost"] = (
+        #         round(float(spec["Other utility cost"]) / fleet_size,2)
+        # )
 
         # ---- city-level info ----------------------------------------------
         f.write("CITY_INFO_SECTION\n")

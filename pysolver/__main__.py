@@ -49,7 +49,7 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
     print("=" * 110)
     print(f"ROUTE SUMMARY  |  Total Routes Used: {len(routes)} | Toll: {toll}€/km")
     print("=" * 110)
-    print(f"{'Route':<10} {'#Cust.':<10} {'Cost(€)':<10} {'Dist.(km)':<10} {'Dist_in(km)':<10} {'toll(€)':<10} {'Dur.(min)':<10} "
+    print(f"{'Route':<10} {'#Cust.':<10} {'Cost(€)':<10} {'Dist.(km)':<10} {'Dist_in(km)':<10} {'Toll(€)':<10} {'Dur.(min)':<10} "
           f"{'Veh.Type':<10} {'Util.W':<10} {'Util.V':<10}")
     print("-" * 110)
 
@@ -112,11 +112,9 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
 
     print("=" * 110)
 
-
 # def print_vt_id_and_routes(evaluation: rb_ext.CVRPEvaluation, solution: rb.Solution):
 #     for i, route in enumerate(solution.routes):
 #         print(f"vt_{evaluation.compute_best_vehicle_id_of_route(route)}:", route)
-
 
 @click.command('pysolver')
 @click.argument('instance-path', type=click.Path(exists=True, dir_okay=False, file_okay=True), required=True)
@@ -153,7 +151,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
         p.hours_per_day,
         p.wage_semi,
         p.wage_heavy,
-        0.0,  # default toll, will be overwritten in loop
+        0.0,  # default toll, will be overwritten in loop 
     )
     toll = 0.4
     city = base_city._replace(toll_per_km_inside=toll)
