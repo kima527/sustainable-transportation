@@ -47,6 +47,7 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
     routes = [r for r in solution.routes if len(r) > 2]
 
     print(routes)
+    
     for i, r in enumerate(routes):
         print(f"Route {i + 1}: {[v.vertex_id for v in r]}")
         
@@ -189,6 +190,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # 3. metaheuristic (LNS)
     lns_savings_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 250)
     print_solution_info("LNS_savings", lns_savings_solution)
+    
     # print_vt_id_and_routes(evaluation, lns_insertion_solution)
 
     #ils_solution = lns_savings_solution
@@ -215,8 +217,5 @@ def main(instance_path: Path, output_path: Path, seed: int):
     draw_routes(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
     draw_routes_on_map(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
     
-    return None
-
-
 if __name__ == '__main__':
-    main(standalone_mode = False)
+    main()
