@@ -2,6 +2,7 @@ NAME : SHANGHAI
 TYPE : HFVRP
 COMMENT : generated from city_configs.json
 DIMENSION : 193
+
 FLEET_SECTION
 1 I 50 34.8 2800 50000 0 0.175 999999 0.059 
 2 II 50 5.8 883 29150 0 0.08 999999 0.059 
@@ -12,6 +13,10 @@ FLEET_SECTION
 7 VII 50 0.2 100 5300 0 0 120 0.049 
 END_FLEET_SECTION
 
+INITIAL_FLEET_SECTION
+1 II 17 5.8 883 29150 0 0.08 999999 0.059 
+END_INITIAL_FLEET_SECTION
+
 CITY_INFO_SECTION
 Other utility cost : 17.16
 Electricity price : 0.1
@@ -19,6 +24,8 @@ Diesel price : 0.77
 Average working hours per day : 8.94
 Average hourly costs of semi-truck driver : 6.98
 Average hourly costs of heavy-truck driver : 8
+Revenue : 384732.42
+green_upside : 0.0
 END_CITY_INFO_SECTION
 
 NODE_COORD_SECTION
@@ -415,6 +422,7 @@ DEPOT_SECTION
 1
 -1
 EOF
+
 SERVICE_TIME_SECTION
 1 0
 2 600

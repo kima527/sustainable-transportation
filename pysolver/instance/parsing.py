@@ -63,12 +63,32 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
                         float(kwh), float(ltr), float(rng),
                        float(maint)))
 
-        print(f"✔️ Loaded vehicle type: [{typ}]")
+    fleet_sz = sum(int(ln.split()[2]) for ln in lines[fs_start:fs_end])
+
+
+    # ---------- INITIAL_FLEET_SECTION (optional) ------------------------
+    try:
+        fs_start = lines.index("INITIAL_FLEET_SECTION") + 1
+        fs_end = lines.index("END_INITIAL_FLEET_SECTION")
+    except ValueError:
+        raise ValueError(f"{instance_path.name} is missing a INITIAL_FLEET_SECTION")
+
+    initial_fleets: list[tuple[str, float, float, float, float,
+    float, float, float]] = []
+
+    for ln in lines[fs_start:fs_end]:
+        # idx typ cnt vol pay_w acq_k€ cons_kWh cons_l max_rng maint_c
+        (_, typ, cnt, vol, pay_w, acq, kwh, ltr, rng, maint) = ln.split()
+        typ = typ.strip()
+
+        initial_fleets.append((typ,  float(vol), float(pay_w), float(acq),
+                        float(kwh), float(ltr), float(rng),
+                       float(maint)))
 
     # use the **first** vehicle type as legacy capacity defaults
     cap_w = fleets[0][1]
     cap_v = fleets[0][2]
-    fleet_sz = sum(int(ln.split()[2]) for ln in lines[fs_start:fs_end])
+    initial_fleet_sz = sum(int(ln.split()[2]) for ln in lines[fs_start:fs_end])
 
     # === Section indices ===
     coord_start = lines.index("NODE_COORD_SECTION") + 1
@@ -135,6 +155,7 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
         capacity_weight=cap_w,
         capacity_volume=cap_v,
         fleet_size=fleet_sz,
+        initial_fleet_size=initial_fleet_sz,
         max_work_time=max_work_sec,
         **city
     )
@@ -147,7 +168,7 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
     inst = Instance(parameters=parameters, vertices=vertices, arcs=arcs)
 
     if return_fleets:  # ← only when the caller asks for it
-        return inst, fleets  # (Instance, list[tuple[acq, cap_w, cap_v, rng]])
+        return inst, fleets, initial_fleets  # (Instance, list[tuple[acq, cap_w, cap_v, rng]], list[tuple[acq, cap_w, cap_v, rng]])
     return inst
 
 
@@ -171,6 +192,8 @@ def _parse_city_info(raw_lines: list[str]) -> dict[str, float]:
         "average working hours":     "hours_per_day",
         "semi-truck driver":         "wage_semi",
         "heavy-truck driver":        "wage_heavy",
+        "revenue":                   "revenue",
+        "green upside":              "green_upside",
     }
 
     out: dict[str, float] = {}

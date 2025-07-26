@@ -110,6 +110,9 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
           f"€{total_toll:<10.2f} {total_dur:<10.1f} "
           f"{'':<10} {avg_w:<10.1%} {avg_v:<10.1%}")
 
+    resale_value = evaluation.compute_resale_value_for_unused_vehicles()
+    print(f"{'RESALE VALUE FOR UNUSED VEHICLES':<10} €{resale_value:.2f}")
+
     print("=" * 110)
 
 # def print_vt_id_and_routes(evaluation: rb_ext.CVRPEvaluation, solution: rb.Solution):
@@ -133,14 +136,16 @@ def main(instance_path: Path, output_path: Path, seed: int):
 
     instance_path = Path(instance_path)
 
-    py_instance, fleets = parse_instance(instance_path, return_fleets=True)
+    py_instance, fleets, initial_fleets = parse_instance(instance_path, return_fleets=True)
     cpp_instance = create_cpp_instance(py_instance)
 
     veh_props = [tuple(row) for row in fleets]
+    initial_veh_props = [tuple(row) for row in initial_fleets]
     CityParams = namedtuple("CityParams",
                             ["utility_other", "maintenance_cost",
                              "price_elec", "price_diesel",
-                             "hours_per_day", "wage_semi", "wage_heavy", "toll_per_km_inside"])
+                             "hours_per_day", "wage_semi", "wage_heavy", 
+                             "toll_per_km_inside", "revenue", "green_upside"])
 
     p = py_instance.parameters
     base_city = CityParams(
@@ -152,11 +157,13 @@ def main(instance_path: Path, output_path: Path, seed: int):
         p.wage_semi,
         p.wage_heavy,
         0.0,  # default toll, will be overwritten in loop 
+        p.revenue,
+        p.green_upside
     )
     toll = 0.4
     city = base_city._replace(toll_per_km_inside=toll)
 
-    evaluation = rb_ext.HFVRPEvaluation(veh_props, p.max_work_time, city._asdict())
+    evaluation = rb_ext.HFVRPEvaluation(veh_props, initial_veh_props, p.max_work_time, city._asdict())
 
     # 0. check routingblocks working properly
     # solution = generate_random_solution(py_instance, evaluation, instance)

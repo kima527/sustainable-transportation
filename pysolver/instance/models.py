@@ -81,6 +81,7 @@ class Parameters:
     capacity_weight: float
     capacity_volume: float
     fleet_size: int
+    initial_fleet_size: int
     max_work_time: float  # seconds
     utility_other: float  # €/d
     maintenance_cost: float  # €/d
@@ -89,6 +90,8 @@ class Parameters:
     hours_per_day: float  # h/d
     wage_semi: float  # €/d
     wage_heavy: float
+    revenue: float
+    green_upside: float
 
 
 

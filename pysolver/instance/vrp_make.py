@@ -47,10 +47,28 @@ def build_vrp(city: str, spec: dict):
             main_c=cat["maint_c_km"],
         ))
 
+    initial_mix: dict[str, int] = spec["initial_fleet"]  # type id  →  count
+
+    initial_fleet_rows = []
+    for typ, cnt in initial_mix.items():
+        cat = CATALOG[typ]
+        initial_fleet_rows.append(dict(
+            typ=typ,
+            cnt=cnt,
+            vol=cat["volume_m3"],
+            pay_w=cat["payload_kg"],
+            acq_c=cat["acq_cost"],
+            con_kWh=cat["cons_kWh_km"],
+            con_l=cat["cons_l_km"],
+            m_rng=cat["max_range_km"],
+            main_c=cat["maint_c_km"],
+        ))
+
     # ---- capacity & fleet size (legacy weight capacity for header) ----------
     cap_weight = fleet_rows[0]["pay_w"]
     cap_volume = fleet_rows[0]["vol"]
     fleet_size = sum(row["cnt"] for row in fleet_rows)
+    initial_fleet_size = sum(row["cnt"] for row in initial_fleet_rows)
     max_work_time=3600 * float(spec["Average working hours per day"])
     utility_other=float(spec["Other utility cost"])
     maintenance_cost=fleet_rows[0]["main_c"]
@@ -59,7 +77,8 @@ def build_vrp(city: str, spec: dict):
     hours_per_day=float(spec["Average working hours per day"])
     wage_semi=float(spec["Average hourly costs of semi-truck driver"])
     wage_heavy=float(spec["Average hourly costs of heavy-truck driver"])
-
+    revenue=float(spec["Revenue"])
+    green_upside=float(spec["green_upside"])
 
     inst = parse_instance_from_csv(
         nodes_path=nodes_path,
@@ -67,6 +86,7 @@ def build_vrp(city: str, spec: dict):
         capacity_weight=cap_weight,
         capacity_volume=cap_volume,
         fleet_size=fleet_size,
+        initial_fleet_size=initial_fleet_size,
         max_work_time=max_work_time,
         utility_other=utility_other,
         maintenance_cost=maintenance_cost,
@@ -74,7 +94,9 @@ def build_vrp(city: str, spec: dict):
         price_diesel=price_diesel,
         hours_per_day=hours_per_day,
         wage_semi=wage_semi,
-        wage_heavy=wage_heavy
+        wage_heavy=wage_heavy,
+        revenue=revenue,
+        green_upside=green_upside
     )
 
     city_slug = city.lower()
@@ -93,7 +115,7 @@ def build_vrp(city: str, spec: dict):
         f.write(f"NAME : {city.upper()}\n")
         f.write("TYPE : HFVRP\n")
         f.write("COMMENT : generated from city_configs.json\n")
-        f.write(f"DIMENSION : {len(inst.vertices)}\n")
+        f.write(f"DIMENSION : {len(inst.vertices)}\n\n")
 
         # ---- fleet block ---------------------------------------------------
         f.write("FLEET_SECTION\n")
@@ -105,14 +127,20 @@ def build_vrp(city: str, spec: dict):
                     f"{row['main_c']} \n")
         f.write("END_FLEET_SECTION\n\n")
 
-        # spec["Other utility cost"] = (
-        #         round(float(spec["Other utility cost"]) / fleet_size,2)
-        # )
+        # ---- initial fleet block ---------------------------------------------------
+        f.write("INITIAL_FLEET_SECTION\n")
+        for idx, row in enumerate(initial_fleet_rows, 1):
+            f.write(f"{idx} {row['typ']} {row['cnt']} "
+                    f"{row['vol']} {row['pay_w']} "
+                    f"{row['acq_c']} {row['con_kWh']} "
+                    f"{row['con_l']} {row['m_rng']} "
+                    f"{row['main_c']} \n")
+        f.write("END_INITIAL_FLEET_SECTION\n\n")
 
         # ---- city-level info ----------------------------------------------
         f.write("CITY_INFO_SECTION\n")
         for k, v in spec.items():
-            if k in ("nodes_path", "routes_path", "fleets"):
+            if k in ("nodes_path", "routes_path", "fleets", "initial_fleet"):
                 continue
             f.write(f"{k} : {v}\n")
         f.write("END_CITY_INFO_SECTION\n\n")
@@ -130,7 +158,7 @@ def build_vrp(city: str, spec: dict):
         # ---- depot ---------------------------------------------------------
         f.write("\nDEPOT_SECTION\n")
         f.write(f"{inst.depot.vertex_id + 1}\n-1\n")
-        f.write("EOF\n")
+        f.write("EOF\n\n")
 
         # ---- service time ---------------------------------------------------------
         f.write("SERVICE_TIME_SECTION\n")

@@ -84,6 +84,10 @@ class HFVRPEvaluation
   std::vector<FleetRow> _fleet;
   resource_t            _max_work_time;
   resource_t toll_per_km_inside = 0.0;
+  // storing how many vehicles of each type are in the initial fleet
+  std::unordered_map<std::string, int> _initial_fleet_count;
+  // tracking how many vehicles of each type are used in the solution
+  mutable std::unordered_map<std::string, int> _vehicles_used;
 
   public:
     std::vector<std::string> _typ;
@@ -102,6 +106,7 @@ class HFVRPEvaluation
 
   private:
     int num_veh = 0;
+    int num_initial_veh = 0;
     resource_t max_work_time = 0;
     resource_t utility_other     = 0.0;
     resource_t maintenance_cost  = 0.0;
@@ -110,6 +115,8 @@ class HFVRPEvaluation
     resource_t hours_per_day     = 8.0;
     resource_t wage_semi         = 0.0;
     resource_t wage_heavy        = 0.0;
+    resource_t revenue           = 0.0;
+    resource_t green_upside      = 0.0;
 
     /* penalty factors */
     double _overload_penalty_factor        = 5.0;
@@ -136,9 +143,18 @@ class HFVRPEvaluation
 
 
   public:
-    HFVRPEvaluation(py::list veh_props, resource_t max_work_time_sec, py::dict city)
+    HFVRPEvaluation(py::list veh_props, py::list initial_veh_props, resource_t max_work_time_sec, py::dict city)
         : max_work_time(max_work_time_sec) {
         num_veh = py::len(veh_props);
+        num_initial_veh = py::len(initial_veh_props);
+
+        // fill initial fleet count
+        for (size_t i = 0; i < num_initial_veh; ++i) {
+            auto t = initial_veh_props[i].cast<py::tuple>();
+            std::string typ = t[0].cast<std::string>();
+            int count = 1;  // Each row represents 1 vehicle in solver logic
+            _initial_fleet_count[typ] += count;
+        }
 
         for (size_t i = 0; i < num_veh; ++i) {
             auto t = veh_props[i].cast<py::tuple>();
@@ -154,7 +170,7 @@ class HFVRPEvaluation
             row.rng       = t[6].cast<resource_t>();
             row.maint_km  = t[7].cast<resource_t>();
 
-             _fleet.push_back(row);
+            _fleet.push_back(row);
 
             /* keep the per-vehicle vectors if you still need them somewhere
                else in the code — otherwise delete them. */
@@ -167,26 +183,32 @@ class HFVRPEvaluation
             maint_km.push_back(t[7].cast<resource_t>());
         }
 
+        // initialize vehicles used to 0
+        for (const auto& row : _fleet) {
+            _vehicles_used[row.typ] = 0;
+        }
 
         /* ------- grab seven floats from the dict ---------------- */
         auto get = [&](const char* key, double dflt = 0.0) -> resource_t {
             return city.contains(key) ? city[key].cast<double>()
                                       : static_cast<resource_t>(dflt);
         };
-        utility_other    = get("utility_other");
-        maintenance_cost = get("maintenance_cost");
-        price_elec       = get("price_elec");
-        price_diesel     = get("price_diesel");
-        hours_per_day    = get("hours_per_day", 8.0);
-        wage_semi        = get("wage_semi");
-        wage_heavy       = get("wage_heavy");
+        utility_other      = get("utility_other");
+        maintenance_cost   = get("maintenance_cost");
+        price_elec         = get("price_elec");
+        price_diesel       = get("price_diesel");
+        hours_per_day      = get("hours_per_day", 8.0);
+        wage_semi          = get("wage_semi");
+        wage_heavy         = get("wage_heavy");
         toll_per_km_inside = get("toll_per_km_inside", 0.0);
+        revenue            = get("revenue");
+        green_upside       = get("green_upside");
     }
 
   private:
     cost_t _compute_cost_for_vehicle_id(size_t k,
                                         resource_t dist, resource_t inside_km, resource_t w,
-                                        resource_t v, resource_t t) const {
+                                        resource_t v, resource_t t, resource_t r, resource_t g) const {
 
         /* --------- determine ICEV vs BEV by type -------------------- */
         const std::string& veh_type = _fleet[k].typ;
@@ -195,19 +217,29 @@ class HFVRPEvaluation
 
         /* --------- acquisition cost -> TCO logic -------------------- */
         resource_t amortized_acq_cost = 0.0;
-        if (veh_type == "IV") {
-            // Special case: leased vehicle (990€/month) with 250/12 working days per month
-            amortized_acq_cost = 990.0 / 20.83;
-        } else {
-            // Normal case: purchase, depreciated over 4 years
-            constexpr double RESALE_ICEV = 0.5;
-            constexpr double RESALE_BEV  = 0.45;
-            constexpr int LIFETIME_YEARS = 4;
-            constexpr int WORKDAYS_PER_YEAR = 250;
-            constexpr int TOTAL_DAYS = LIFETIME_YEARS * WORKDAYS_PER_YEAR;
+        bool is_used_from_initial = false;
 
-            const double resale_rate = is_icev ? RESALE_ICEV : RESALE_BEV;
-            amortized_acq_cost = (_fleet[k].acq * (1.0 - resale_rate)) / TOTAL_DAYS;
+        if (_initial_fleet_count.contains(veh_type) && _vehicles_used.at(veh_type) < _initial_fleet_count.at(veh_type)) {
+            // Use an owned vehicle
+            _vehicles_used[veh_type]++;
+            is_used_from_initial = true;
+        }
+
+        // Normal case: purchase, depreciated over 4 years
+        constexpr double RESALE_ICEV = 0.5;
+        constexpr double RESALE_BEV  = 0.45;
+        constexpr int LIFETIME_YEARS = 4;
+        constexpr int WORKDAYS_PER_YEAR = 250;
+        constexpr int TOTAL_DAYS = LIFETIME_YEARS * WORKDAYS_PER_YEAR;
+
+        if (!is_used_from_initial) {
+            if (veh_type == "IV") {
+                // Special case: leased vehicle (990€/month) with 250/12 working days per month
+                amortized_acq_cost = 990.0 / 20.83;
+            } else {
+                const double resale_rate = is_icev ? RESALE_ICEV : RESALE_BEV;
+                amortized_acq_cost = (_fleet[k].acq * (1.0 - resale_rate)) / TOTAL_DAYS;
+            }
         }
 
         /* --------- variable costs ----------------------------------- */
@@ -223,6 +255,9 @@ class HFVRPEvaluation
         // toll
         resource_t toll_cost = is_icev ? inside_km * toll_per_km_inside : 0.0;
 
+        // gree upside
+        auto green_upside_cost_discount = (revenue * green_upside) / (WORKDAYS_PER_YEAR * num_initial_veh);
+
         /* --------- penalties / overload ----------------------------- */
         auto ow   = std::max<resource_t>(0, w - _fleet[k].cap_w);
         auto ov   = std::max<resource_t>(0, v - _fleet[k].cap_v);
@@ -231,9 +266,10 @@ class HFVRPEvaluation
 
         /* --------- total -------------------------------------------- */
         return  fuel_cost + maint_cost + wage_cost + toll_cost
-              + amortized_acq_cost  /* acq_c per day   */
-              + ow   * _overload_penalty_factor
-              + ov   * _overload_penalty_factor      /* overload pens. */
+              + amortized_acq_cost  // acq_c per day
+              - green_upside_cost_discount // discount for a green vehicle
+              + ow   * _overload_penalty_factor // penalties
+              + ov   * _overload_penalty_factor
               + orng * _range_excess_penalty_factor
               + ot   * _worktime_penalty_factor;
     }
@@ -241,13 +277,14 @@ class HFVRPEvaluation
     std::pair<size_t, cost_t>
     _best_vehicle(resource_t d, resource_t in, resource_t w, resource_t v, resource_t t) const {
         size_t best = 0;
-        auto bestc = _compute_cost_for_vehicle_id(0, d, in, w, v, t);
+        auto bestc = _compute_cost_for_vehicle_id(0, d, in, w, v, t, revenue, green_upside);
         for (size_t k = 1; k < num_veh; ++k) {
-            auto c = _compute_cost_for_vehicle_id(k, d, in, w, v, t);
+            auto c = _compute_cost_for_vehicle_id(k, d, in, w, v, t, revenue, green_upside);
             if (c < bestc) { bestc = c; best = k; }
         }
         return {best, bestc};
     }
+    
 
   public:
     /* ---- mandatory overrides ------------------------------------------- */
@@ -298,11 +335,30 @@ class HFVRPEvaluation
                              f.load_volume, f.work_time).first;
     }
 
+    cost_t compute_resale_value_for_unused_vehicles() const {
+        constexpr double RESALE_ICEV = 0.5;
+        constexpr double RESALE_BEV  = 0.45;
+    
+        cost_t resale_value = 0.0;
+        for (const auto& [typ, initial_count] : _initial_fleet_count) {
+            int used = _vehicles_used[typ];
+            int unused = std::max(0, initial_count - used);
+    
+            const auto& row = *std::find_if(_fleet.begin(), _fleet.end(), [&](const FleetRow& r) {
+                return r.typ == typ;
+            });
+    
+            double resale_rate = (typ == "I" || typ == "II" || typ == "III") ? RESALE_ICEV : RESALE_BEV;
+            resale_value += unused * row.acq * resale_rate;
+        }
+        return resale_value;
+    }
+
     public:
         py::dict summarize_route(const routingblocks::Route& route) const {
             const auto& label = route.end_depot().operator*().forward_label().get<HFVRP_forward_label>();
             auto vid = _best_vehicle(label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time).first;
-            auto cost = _compute_cost_for_vehicle_id(vid, label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time);
+            auto cost = _compute_cost_for_vehicle_id(vid, label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time, this->revenue, this->green_upside);
 
             cost_t fixed = (route.size() > 2) ? utility_other : 0.0;
 
@@ -420,8 +476,9 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
        3)  Evaluation class itself
     -------------------------------------------------------------- */
     py::class_<HFVRPEvaluation, routingblocks::Evaluation>(m, "HFVRPEvaluation")
-        .def(py::init<py::list, resource_t, py::dict>(),
+        .def(py::init<py::list, py::list, resource_t, py::dict>(),
              py::arg("vehicle_properties"),
+             py::arg("initial_vehicle_properties"),
              py::arg("max_work_time_sec"),
              py::arg("city_params"))
         .def("choose_vehicle", &HFVRPEvaluation::choose_vehicle,
@@ -458,7 +515,9 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
              &HFVRPEvaluation::set_range_excess_penalty_factor)
         .def_property("worktime_penalty_factor",
              &HFVRPEvaluation::get_worktime_penalty_factor,
-             &HFVRPEvaluation::set_worktime_penalty_factor);
+             &HFVRPEvaluation::set_worktime_penalty_factor)
+        .def("compute_resale_value_for_unused_vehicles", &HFVRPEvaluation::compute_resale_value_for_unused_vehicles);
+
 
     /* --------------------------------------------------------------
        4)  Convenience C-helpers for building vertices/arcs from Python
