@@ -1,1 +1,5 @@
 .venv/
+
+# Byte-code caches
+__pycache__/
+*.pyc
