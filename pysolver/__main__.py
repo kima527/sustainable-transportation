@@ -17,9 +17,10 @@ from pysolver.instance.interface import create_cpp_instance
 from pysolver.instance.parsing import parse_instance
 from pysolver.utils.plot import draw_routes
 from pysolver.utils.plot_map import draw_routes_on_map
+from pysolver.metaheuristic.ils import iterative_local_search
+
 
 from pysolver.metaheuristic import lns
-
 
 def print_solution_info(name: str, solution: rb.Solution):
     print(f"{name} | obj: {solution.cost} | feasible: {solution.feasible}")
@@ -46,6 +47,9 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
     routes = [r for r in solution.routes if len(r) > 2]
 
     print(routes)
+    for i, r in enumerate(routes):
+        print(f"Route {i + 1}: {[v.vertex_id for v in r]}")
+        
     print("=" * 110)
     print(f"ROUTE SUMMARY  |  Total Routes Used: {len(routes)} | Toll: {toll}€/km")
     print("=" * 110)
@@ -177,18 +181,30 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # 2. create solution (insertion)
     #insertion_solution = sequential_best_insertion(py_instance, evaluation, cpp_instance)
     #print_solution_info("Insertion", insertion_solution)
+    
+    # 2.1
 
+
+    
     # 3. metaheuristic (LNS)
     lns_savings_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 250)
     print_solution_info("LNS_savings", lns_savings_solution)
     # print_vt_id_and_routes(evaluation, lns_insertion_solution)
 
-    # 4. improve solution (LS)
-    ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance, granularity=20)
-    ls_engine.improve(lns_savings_solution)
-    print_solution_info("LocalSearch", lns_savings_solution)
+    #ils_solution = lns_savings_solution
 
-    print_route_summary(py_instance, lns_savings_solution, evaluation, toll)
+    ils_solution = iterative_local_search(py_instance, evaluation, cpp_instance, cpp_random, lns_savings_solution,  
+                                          max_iterations=50, perturbation_strength=10, ls_granularity=20)
+
+    # 4. improve solution (LS)
+    #ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance, granularity=20)
+    #ls_engine.improve(lns_savings_solution)
+    
+    # 5. Solution
+    
+    print_solution_info("ILS", ils_solution)
+
+    print_route_summary(py_instance, ils_solution, evaluation, toll)
     # 6. metaheuristic (ALNS)
 
     # 7. custom operator (ALNS)
@@ -196,9 +212,11 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # 8. adapting routingblocks
 
     # draw something with colors
-    draw_routes(py_instance, [[v.vertex_id for v in route] for route in lns_savings_solution])
-    draw_routes_on_map(py_instance, [[v.vertex_id for v in route] for route in lns_savings_solution])
+    draw_routes(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
+    draw_routes_on_map(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
+    
+    return None
 
 
 if __name__ == '__main__':
-    main()
+    main(standalone_mode = False)
