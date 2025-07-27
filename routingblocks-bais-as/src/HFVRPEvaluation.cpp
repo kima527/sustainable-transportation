@@ -172,6 +172,10 @@ class HFVRPEvaluation
 
             _fleet.push_back(row);
 
+            if (!_initial_fleet_count.contains(row.typ)) {
+                _initial_fleet_count[row.typ] = 0;
+            }            
+
             /* keep the per-vehicle vectors if you still need them somewhere
                else in the code — otherwise delete them. */
             acq.     push_back(row.acq);
