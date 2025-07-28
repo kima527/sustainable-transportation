@@ -188,6 +188,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # print(solution, solution.feasible)
 
     # 1. create solution (savings)
+    evaluation.reset_free_vehicle_usage()
     savings_solution = savings(py_instance, evaluation, cpp_instance)
     print_solution_info("Savings", savings_solution)
     #print_vt_id_and_routes(evaluation, savings_solution)
@@ -201,6 +202,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
 
     
     # 3. metaheuristic (LNS)
+    evaluation.reset_free_vehicle_usage()
     lns_savings_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 250)
     print_solution_info("LNS_savings", lns_savings_solution)
     
@@ -208,16 +210,17 @@ def main(instance_path: Path, output_path: Path, seed: int):
 
     #ils_solution = lns_savings_solution
 
-    ils_solution = iterative_local_search(py_instance, evaluation, cpp_instance, cpp_random, lns_savings_solution,  
-                                          max_iterations=50, perturbation_strength=10, ls_granularity=20)
+    # ils_solution = iterative_local_search(py_instance, evaluation, cpp_instance, cpp_random, lns_savings_solution,  
+    #                                          max_iterations=50, perturbation_strength=10, ls_granularity=20)
 
     # 4. improve solution (LS)
     #ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance, granularity=20)
     #ls_engine.improve(lns_savings_solution)
     
     # 5. Solution
-    print_solution_info("ILS", ils_solution)
-    print_route_summary(py_instance, ils_solution, evaluation, toll)
+    # print_solution_info("ILS", ils_solution)
+    evaluation.reset_free_vehicle_usage()
+    print_route_summary(py_instance, lns_savings_solution, evaluation, toll)
 
     # 6. metaheuristic (ALNS)
 
@@ -226,8 +229,8 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # 8. adapting routingblocks
 
     # draw something with colors
-    draw_routes(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
-    draw_routes_on_map(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
+    draw_routes(py_instance, [[v.vertex_id for v in route] for route in lns_savings_solution])
+    draw_routes_on_map(py_instance, [[v.vertex_id for v in route] for route in lns_savings_solution])
     
 if __name__ == '__main__':
     main()

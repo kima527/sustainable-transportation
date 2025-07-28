@@ -139,6 +139,8 @@ class HFVRPEvaluation
     resource_t revenue           = 0.0;
     resource_t green_upside      = 0.0;
 
+    static std::unordered_map<std::string, int> type_usage_counter;
+
     /* penalty factors */
     double _overload_penalty_factor        = 5.0; // per kg, per m^3 its 10 times that in cost function
     double _range_excess_penalty_factor    = 3.0;
@@ -228,7 +230,7 @@ class HFVRPEvaluation
   private:
     CostBreakdown _compute_cost_for_vehicle_id(size_t k,
                                         resource_t dist, resource_t inside_km, resource_t w,
-                                        resource_t v, resource_t t, resource_t r, resource_t g) const {
+                                        resource_t v, resource_t t, resource_t r, resource_t g, bool count_free_vehicle=false) const {
 
         CostBreakdown c;
         /* --------- determine ICEV vs BEV by type -------------------- */
@@ -240,8 +242,16 @@ class HFVRPEvaluation
         c.amortized_acq_cost = 0.0;
         bool is_used_from_initial = false;
 
-        is_used_from_initial = (_initial_fleet_count.contains(veh_type) 
-                                && _initial_fleet_count.at(veh_type) > 0);
+        if (count_free_vehicle) {
+            if (_initial_fleet_count.contains(veh_type)) {
+                int already_used = type_usage_counter[veh_type];
+                int allowed = _initial_fleet_count.at(veh_type);
+                if (already_used < allowed) {
+                    is_used_from_initial = true;
+                    type_usage_counter[veh_type]++;
+                }
+            }
+        }
 
         // Normal case: purchase, depreciated over 4 years
         constexpr double RESALE_ICEV = 0.5;
@@ -379,13 +389,16 @@ class HFVRPEvaluation
         }
         return resale_value;
     }
-    
+
+    void reset_free_vehicle_usage() const {
+        type_usage_counter.clear();
+    }
 
     public:
         py::dict summarize_route(const routingblocks::Route& route) const {
             const auto& label = route.end_depot().operator*().forward_label().get<HFVRP_forward_label>();
             auto vid = _best_vehicle(label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time, false).first;
-            CostBreakdown c = _compute_cost_for_vehicle_id(vid, label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time, this->revenue, this->green_upside);
+            CostBreakdown c = _compute_cost_for_vehicle_id(vid, label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time, this->revenue, this->green_upside, true);
 
             cost_t fixed = (route.size() > 2) ? utility_other : 0.0;
 
@@ -450,6 +463,8 @@ class HFVRPEvaluation
         return {0, 0, 0, 0, 0};
     }
 };
+
+std::unordered_map<std::string, int> HFVRPEvaluation::type_usage_counter;
 
 /* -------------------------  Python binding ----------------------------- */
 
@@ -545,7 +560,9 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
         .def_property("worktime_penalty_factor",
              &HFVRPEvaluation::get_worktime_penalty_factor,
              &HFVRPEvaluation::set_worktime_penalty_factor)
-        .def("compute_resale_value_for_unused_vehicles", &HFVRPEvaluation::compute_resale_value_for_unused_vehicles);
+        .def("compute_resale_value_for_unused_vehicles", &HFVRPEvaluation::compute_resale_value_for_unused_vehicles)
+        .def("reset_free_vehicle_usage", &HFVRPEvaluation::reset_free_vehicle_usage);
+
 
 
     /* --------------------------------------------------------------
