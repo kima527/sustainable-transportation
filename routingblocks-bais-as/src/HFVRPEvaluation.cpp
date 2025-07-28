@@ -141,9 +141,9 @@ class HFVRPEvaluation
     resource_t green_upside      = 0.0;
 
     /* penalty factors */
-    double _overload_penalty_factor        = 5.0;
+    double _overload_penalty_factor        = 5.0; // per kg, per m^3 its 10 times that in cost function
     double _range_excess_penalty_factor    = 3.0;
-    double _worktime_penalty_factor        = 1.5;
+    double _worktime_penalty_factor        = 0.01; // per second -> 36€ per hour overtime
 
   public:
     double get_overload_penalty_factor()      const { return _overload_penalty_factor; }
@@ -298,7 +298,7 @@ class HFVRPEvaluation
               + c.amortized_acq_cost  // acq_c per day
               - c.green_upside_cost_discount // discount for a green vehicle
               + ow   * _overload_penalty_factor // penalties
-              + ov   * _overload_penalty_factor
+              + ov   * _overload_penalty_factor * 10
               + orng * _range_excess_penalty_factor
               + ot   * _worktime_penalty_factor;
 
