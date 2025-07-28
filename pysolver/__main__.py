@@ -143,7 +143,7 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
 def main(instance_path: Path, output_path: Path, seed: int):
     # set random number generator seed to ensure deterministic behavior for reproducibility
     if seed is None:
-        seed = 0
+        seed = random.randint(0, 10000)
     random.seed(seed)
     np.random.seed(seed)
     cpp_random = rb.Random(seed)

@@ -3,7 +3,7 @@ from itertools import product
 from math import sqrt
 from pathlib import Path
 from typing import Callable
-from .parsing_csv import parse_routes_file
+from .parsing_csv import parse_routes_file, parse_nodes_file
 
 from .models import Vertex, Parameters, ArcID, Arc, Instance, VertexType
 
@@ -93,7 +93,7 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
     # === Section indices ===
     coord_start = lines.index("NODE_COORD_SECTION") + 1
     demand_start = lines.index("DEMAND_SECTION")
-    depot_start = lines.index("DEPOT_SECTION")
+    depmand_end = lines.index("END_DEMAND_SECTION")
 
 
     # === Load id_map.txt ===
@@ -115,7 +115,7 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
         y = float(tokens[2])
         vertex_type = VertexType.Depot if vertex_id == 0 else VertexType.Customer
 
-        vertex_name = id_map.get(int(tokens[0]), tokens[0])
+        vertex_name = id_map.get(int(tokens[0]), tokens[0]).strip()
 
 
         vertices.append(Vertex(
@@ -130,12 +130,30 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
         ))
 
     # === 2. Parse Demands ===
-    for ln in lines[demand_start + 1: depot_start]:
-        idx, w = ln.split()[:2]
+    for ln in lines[demand_start + 1: depmand_end]:
+        tokens = ln.strip().split()
+        if len(tokens) < 2:
+            continue
+        idx, w = tokens[:2]
         vid = int(idx) - 1
         vertices[vid].demand_weight = int(w)
-        # ➜ simple proxy: assume 1 m³ per 100 kg if no field exists
-        vertices[vid].demand_volume = float(w) / 100.0
+
+    # === 2b. Parse Volume (if exists)
+    try:
+        volume_start = lines.index("VOLUME_SECTION") + 1
+        volume_end = lines.index("END_VOLUME_SECTION")
+        for ln in lines[volume_start:volume_end]:
+            tokens = ln.strip().split()
+            if len(tokens) < 2:
+                continue
+            idx, vol = tokens[:2]
+            vid = int(idx) - 1
+            # assuming volume is in dm³ → convert to m³
+            vertices[vid].demand_volume = float(vol) / 1000.0
+    except ValueError:
+        # fallback estimate if volume is missing
+        for v in vertices:
+            v.demand_volume = v.demand_weight / 1000.0
 
     avg_work_h = city.get("hours_per_day", 8.0)
     max_work_sec = 3600.0 * avg_work_h

@@ -154,6 +154,15 @@ def build_vrp(city: str, spec: dict):
         f.write("\nDEMAND_SECTION\n")
         for v in inst.vertices:
             f.write(f"{v.vertex_id + 1} {v.demand}\n")
+        f.write("END_DEMAND_SECTION\n\n")
+
+        # ---- volumes -------------------------------------------------------
+        f.write("\nVOLUME_SECTION\n")
+        for v in inst.vertices:
+            # convert m³ to milliliters (×1000) for compatibility
+            milliliters = int(round(v.demand_volume * 1000))
+            f.write(f"{v.vertex_id + 1} {milliliters}\n")
+        f.write("END_VOLUME_SECTION\n\n")
 
         # ---- depot ---------------------------------------------------------
         f.write("\nDEPOT_SECTION\n")
