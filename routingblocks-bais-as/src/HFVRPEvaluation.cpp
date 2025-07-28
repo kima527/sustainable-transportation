@@ -511,8 +511,8 @@ PYBIND11_MODULE(_routingblocks_bais_as, m)
              py::arg("max_work_time_sec"),
              py::arg("city_params"))
         .def("choose_vehicle", &HFVRPEvaluation::choose_vehicle,
-             py::arg("inside_km"),
              py::arg("distance"),
+             py::arg("inside_km"),
              py::arg("load_weight"),
              py::arg("load_volume"),
              py::arg("work_time"))

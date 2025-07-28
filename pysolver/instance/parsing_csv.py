@@ -24,32 +24,45 @@ def parse_nodes_file(path: Path) -> list[Vertex]:
         dtype={"Id": str}
     )
 
-    for i, row in nodes_df.iterrows():
+    for _, row in nodes_df.iterrows():
         name = row['Id'].strip()
+        print(f"[DEBUG] Raw name: '{name}' → stripped: '{name.strip()}' (len={len(name)})")
+
+        # Extract vertex_id correctly from the name (e.g., C35 → 35)
+        if name.startswith("C"):
+            vertex_id = int(name[1:])
+            vertex_type = VertexType.Customer
+        elif name.startswith("D"):
+            vertex_id = 0
+            vertex_type = VertexType.Depot
+        else:
+            raise ValueError(f"Unknown Id format: {name}")
+
         lon = float(row['Lon'])
         lat = float(row['Lat'])
         weight = int(row['Demand[kg]'])
-        volume = float(row['Demand[m^3*10^-3]'])
-        service_time_row = row["Duration"]
-        if pd.isna(service_time_row):
-            service_time = 0.0
-        elif isinstance(service_time_row, str) and ":" in service_time_row:
-            service_time = _hhmmss_to_seconds(service_time_row)
-        else:
-            service_time = float(service_time_row)
+        volume = float(row['Demand[m^3*10^-3]']) / 1000.0  # Convert to m³
+        duration = row["Duration"]
 
-        vertex_type = VertexType.Depot if name.startswith("D") else VertexType.Customer
+        if pd.isna(duration):
+            service_time = 0.0
+        elif isinstance(duration, str) and ":" in duration:
+            service_time = _hhmmss_to_seconds(duration)
+        else:
+            service_time = float(duration)
 
         vertices.append(Vertex(
-            vertex_id=i,
+            vertex_id=vertex_id,
             vertex_name=name,
             vertex_type=vertex_type,
             x_coord=lon,
             y_coord=lat,
             demand_weight=weight,
             demand_volume=volume,
-            service_time=service_time #second
+            service_time=service_time
         ))
+    if name.strip() in {"C35", "C6"}:
+        print(f"[DEBUG] From .nodes → {name}: weight={weight}, volume={volume}")
 
     return vertices
 
