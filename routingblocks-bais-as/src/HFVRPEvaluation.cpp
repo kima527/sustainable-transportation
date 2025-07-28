@@ -77,6 +77,28 @@ struct HFVRP_arc_data {
     HFVRP_arc_data(resource_t d, resource_t t, resource_t in) : distance(d), travel_time(t), inside_km(in) {}
 };
 
+struct CostBreakdown {
+    cost_t fuel_cost;
+    cost_t maint_cost;
+    cost_t wage_cost;
+    cost_t toll_cost;
+    cost_t amortized_acq_cost;
+    cost_t green_upside_cost_discount;
+    cost_t total;
+
+    py::dict to_dict() const {
+        py::dict d;
+        d["fuel_cost"] = fuel_cost;
+        d["maint_cost"] = maint_cost;
+        d["wage_cost"] = wage_cost;
+        d["toll_cost"] = toll_cost;
+        d["amortized_acq_cost"] = amortized_acq_cost;
+        d["green_upside_cost_discount"] = green_upside_cost_discount;
+        d["total"] = total;
+        return d;
+    }
+};
+
 class HFVRPEvaluation
         : public routingblocks::ConcatenationBasedEvaluationImpl<
               HFVRPEvaluation, HFVRP_forward_label, HFVRP_backward_label,
@@ -210,17 +232,18 @@ class HFVRPEvaluation
     }
 
   private:
-    cost_t _compute_cost_for_vehicle_id(size_t k,
+    CostBreakdown _compute_cost_for_vehicle_id(size_t k,
                                         resource_t dist, resource_t inside_km, resource_t w,
                                         resource_t v, resource_t t, resource_t r, resource_t g) const {
 
+        CostBreakdown c;
         /* --------- determine ICEV vs BEV by type -------------------- */
         const std::string& veh_type = _fleet[k].typ;
         const bool is_icev = (veh_type == "I" || veh_type == "II" ||
                               veh_type == "III");
 
         /* --------- acquisition cost -> TCO logic -------------------- */
-        resource_t amortized_acq_cost = 0.0;
+        c.amortized_acq_cost = 0.0;
         bool is_used_from_initial = false;
 
         if (_initial_fleet_count.contains(veh_type) && _vehicles_used.at(veh_type) < _initial_fleet_count.at(veh_type)) {
@@ -239,28 +262,30 @@ class HFVRPEvaluation
         if (!is_used_from_initial) {
             if (veh_type == "IV") {
                 // Special case: leased vehicle (990€/month) with 250/12 working days per month
-                amortized_acq_cost = 990.0 / 20.83;
+                c.amortized_acq_cost = 990.0 / 20.83;
             } else {
                 const double resale_rate = is_icev ? RESALE_ICEV : RESALE_BEV;
-                amortized_acq_cost = (_fleet[k].acq * (1.0 - resale_rate)) / TOTAL_DAYS;
+                c.amortized_acq_cost = (_fleet[k].acq * (1.0 - resale_rate)) / TOTAL_DAYS;
             }
         }
 
         /* --------- variable costs ----------------------------------- */
-        auto fuel_cost =
+        c.fuel_cost =
             _fleet[k].cons_l  * price_diesel * dist +        // diesel
             _fleet[k].cons_kWh* price_elec   * dist;         // electricity (if BEV)
-        auto maint_cost = _fleet[k].maint_km * dist;
+        c.maint_cost = _fleet[k].maint_km * dist;
 
         // wage €/h  (JSON already gives €/h)
         const auto wage_rate = (_fleet[k].cap_w > 3500 ? wage_heavy : wage_semi);
-        const auto wage_cost = (t / 3600.0) * wage_rate;          // t is seconds
+        c.wage_cost = (t / 3600.0) * wage_rate;          // t is seconds
 
         // toll
-        resource_t toll_cost = is_icev ? inside_km * toll_per_km_inside : 0.0;
+        c.toll_cost = is_icev ? inside_km * toll_per_km_inside : 0.0;
 
         // gree upside
-        auto green_upside_cost_discount = (revenue * green_upside) / (WORKDAYS_PER_YEAR * num_initial_veh);
+        c.green_upside_cost_discount = (num_initial_veh > 0)
+                                        ? (revenue * green_upside) / (WORKDAYS_PER_YEAR * num_initial_veh)
+                                        : 0.0;
 
         /* --------- penalties / overload ----------------------------- */
         auto ow   = std::max<resource_t>(0, w - _fleet[k].cap_w);
@@ -269,22 +294,24 @@ class HFVRPEvaluation
         auto ot   = std::max<resource_t>(0, t - max_work_time);
 
         /* --------- total -------------------------------------------- */
-        return  fuel_cost + maint_cost + wage_cost + toll_cost
-              + amortized_acq_cost  // acq_c per day
-              - green_upside_cost_discount // discount for a green vehicle
+        c.total = c.fuel_cost + c.maint_cost + c.wage_cost + c.toll_cost
+              + c.amortized_acq_cost  // acq_c per day
+              - c.green_upside_cost_discount // discount for a green vehicle
               + ow   * _overload_penalty_factor // penalties
               + ov   * _overload_penalty_factor
               + orng * _range_excess_penalty_factor
               + ot   * _worktime_penalty_factor;
+
+        return c;
     }
 
-    std::pair<size_t, cost_t>
+    std::pair<size_t, CostBreakdown>
     _best_vehicle(resource_t d, resource_t in, resource_t w, resource_t v, resource_t t) const {
         size_t best = 0;
-        auto bestc = _compute_cost_for_vehicle_id(0, d, in, w, v, t, revenue, green_upside);
+        CostBreakdown bestc = _compute_cost_for_vehicle_id(0, d, in, w, v, t, revenue, green_upside);
         for (size_t k = 1; k < num_veh; ++k) {
-            auto c = _compute_cost_for_vehicle_id(k, d, in, w, v, t, revenue, green_upside);
-            if (c < bestc) { bestc = c; best = k; }
+            CostBreakdown c = _compute_cost_for_vehicle_id(k, d, in, w, v, t, revenue, green_upside);
+            if (c.total < bestc.total) { bestc = c; best = k; }
         }
         return {best, bestc};
     }
@@ -298,14 +325,14 @@ class HFVRPEvaluation
                        const routingblocks::Vertex& pred,
                        const HFVRP_vertex_data& pred_dat) {
 
-        auto [vid, var_cost] = _best_vehicle(f.distance+b.distance,
+        auto var_cost = _best_vehicle(f.distance+b.distance,
                                          f.inside_km+b.inside_km,
                                          f.load_weight+b.load_weight,
                                          f.load_volume+b.load_volume,
-                                         f.work_time +b.work_time);
+                                         f.work_time +b.work_time).second.total;
 
-         cost_t fixed = pred.is_depot ? utility_other : 0.0;
-    return var_cost + fixed;
+        cost_t fixed = pred.is_depot ? utility_other : 0.0;
+        return var_cost + fixed;
     }
 
     std::vector<resource_t>
@@ -322,7 +349,7 @@ class HFVRPEvaluation
 
     cost_t compute_cost(const HFVRP_forward_label& f) const {
         return _best_vehicle(f.distance, f.inside_km, f.load_weight,
-                             f.load_volume, f.work_time).second;
+                             f.load_volume, f.work_time).second.total;
     }
 
     bool is_feasible(const HFVRP_forward_label& f) const {
@@ -362,7 +389,7 @@ class HFVRPEvaluation
         py::dict summarize_route(const routingblocks::Route& route) const {
             const auto& label = route.end_depot().operator*().forward_label().get<HFVRP_forward_label>();
             auto vid = _best_vehicle(label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time).first;
-            auto cost = _compute_cost_for_vehicle_id(vid, label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time, this->revenue, this->green_upside);
+            CostBreakdown c = _compute_cost_for_vehicle_id(vid, label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time, this->revenue, this->green_upside);
 
             cost_t fixed = (route.size() > 2) ? utility_other : 0.0;
 
@@ -371,8 +398,8 @@ class HFVRPEvaluation
 
             py::dict result;
             result["vehicle_type"] = _fleet[vid].typ;    // e.g. "I"
-            result["cost"] = cost;
             result["fixed_cost"] = fixed;
+            result["cost"] = c.total + fixed;
             result["distance"] = label.distance;
             result["duration"] = label.work_time;
             result["load_weight"] = label.load_weight;
@@ -380,7 +407,13 @@ class HFVRPEvaluation
             result["capacity_weight"] = _fleet[vid].cap_w;
             result["capacity_volume"] = _fleet[vid].cap_v;
             result["inside_km"] = label.inside_km;
-            result["toll_cost"] = (is_icev ? toll_per_km_inside * label.inside_km : 0.0);
+            result["toll_cost"] = c.toll_cost;
+            result["green_upside_cost_discount"] = c.green_upside_cost_discount;
+            result["fuel_cost"] = c.fuel_cost;
+            result["maint_cost"] = c.maint_cost;
+            result["wage_cost"] = c.wage_cost;
+            result["amortized_acq_cost"] = c.amortized_acq_cost;
+            result["green_upside_cost_discount"] = c.green_upside_cost_discount;
             return result;
         }
 

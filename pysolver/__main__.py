@@ -42,83 +42,92 @@ def _compactify(sol: rb.Solution) -> None:
             i += 1
 
 def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.HFVRPEvaluation, toll):
-    _compactify(solution)                          # <<< purge first
+    _compactify(solution)
 
     routes = [r for r in solution.routes if len(r) > 2]
-
     print(routes)
-    
-    for i, r in enumerate(routes):
-        print(f"Route {i + 1}: {[v.vertex_id for v in r]}")
-        
-    print("=" * 110)
-    print(f"ROUTE SUMMARY  |  Total Routes Used: {len(routes)} | Toll: {toll}€/km")
-    print("=" * 110)
-    print(f"{'Route':<10} {'#Cust.':<10} {'Cost(€)':<10} {'Dist.(km)':<10} {'Dist_in(km)':<10} {'Toll(€)':<10} {'Dur.(min)':<10} "
-          f"{'Veh.Type':<10} {'Util.W':<10} {'Util.V':<10}")
-    print("-" * 110)
 
-    # ------------------------------------------------------------------
-    #  ❑  Accumulators for the grand totals / averages
-    # ------------------------------------------------------------------
-    total_cust = total_cost = total_dist = total_in = total_toll = total_dur = 0.0
+    print("=" * 170)
+    print(f"ROUTE SUMMARY  |  Total Routes Used: {len(routes)} | Toll: {toll}€/km")
+    print("=" * 170)
+
+    header = (f"{'Route':<8} {'#Cust.':<8} {'Dist.':<8} {'InDist.':<8} {'Dur.':<8} {'Veh.':<6} {'Total€':<10} "
+              f"{'Fixed€':<10} {'Acq€':<10} {'Fuel€':<10} {'Maint€':<10} {'Wage€':<10} {'Toll€':<10} {'Green↓€':<10} "
+              f"{'Util.W':<10} {'Util.V':<10}")
+    print(header)
+    print("-" * len(header))
+
+    # Totals
+    total_cust = total_dist = total_in = total_dur = 0.0
+    total_cost = total_fixed = total_acq = total_fuel = total_maint = 0.0
+    total_wage = total_toll = total_green = 0.0
     sum_w_util = sum_v_util = 0.0
     route_count = 0
-    # ------------------------------------------------------------------
 
     for idx, route in enumerate(routes):
-        if len(route) <= 2:
-            print(f"{idx + 1:<6} {'EMPTY':<8}")
-            continue
-
         try:
             summary = evaluation.summarize_route(route)
 
             route_id = idx + 1
             num_customers = len(route) - 2
-            cost = summary["cost"]
             distance = summary["distance"]
             dist_inside = summary["inside_km"]
-            toll_cost = summary["toll_cost"]
-            duration = summary["duration"] / 60  # seconds → min
+            duration = summary["duration"] / 60
             vehicle_type = summary["vehicle_type"]
 
-            weight_util = (summary["load_weight"] / summary["capacity_weight"]
-                           if summary["capacity_weight"] > 0 else 0.0)
-            volume_util = (summary["load_volume"] / summary["capacity_volume"]
-                           if summary["capacity_volume"] > 0 else 0.0)
+            cost = summary["cost"]
+            fixed_cost = summary.get("fixed_cost", 0.0)
+            acq_cost = summary["amortized_acq_cost"]
+            fuel_cost = summary["fuel_cost"]
+            maint_cost = summary["maint_cost"]
+            wage_cost = summary["wage_cost"]
+            toll_cost = summary["toll_cost"]
+            green_discount = summary["green_upside_cost_discount"]
+
+            weight_util = summary["load_weight"] / summary["capacity_weight"] if summary["capacity_weight"] > 0 else 0.0
+            volume_util = summary["load_volume"] / summary["capacity_volume"] if summary["capacity_volume"] > 0 else 0.0
+
+            # Totals
             total_cust += num_customers
-            total_cost += cost
             total_dist += distance
             total_in += dist_inside
-            total_toll += toll_cost
             total_dur += duration
+            total_cost += cost
+            total_fixed += fixed_cost
+            total_acq += acq_cost
+            total_fuel += fuel_cost
+            total_maint += maint_cost
+            total_wage += wage_cost
+            total_toll += toll_cost
+            total_green += green_discount
             sum_w_util += weight_util
             sum_v_util += volume_util
             route_count += 1
 
+            print(f"{route_id:<8} {num_customers:<8} {distance:<8.1f} {dist_inside:<8.1f} {duration:<8.1f} "
+                  f"{vehicle_type:<6} €{cost:<9.2f} €{fixed_cost:<9.2f} €{acq_cost:<9.2f} €{fuel_cost:<9.2f} "
+                  f"€{maint_cost:<9.2f} €{wage_cost:<9.2f} €{toll_cost:<9.2f} €{green_discount:<9.2f} "
+                  f"{weight_util:<10.1%} {volume_util:<10.1%}")
 
-            if route_count:  # avoid division by 0
-                avg_w = sum_w_util / route_count
-                avg_v = sum_v_util / route_count
-            else:
-                avg_w = avg_v = 0.0
-
-            print(f"{route_id:<10} {num_customers:<10} €{cost:<10.2f} {distance:<10.1f} {dist_inside:<10.1f} "
-                  f"€{toll_cost:<10.2f} {duration:<10.1f} {vehicle_type:<10} {weight_util:<10.1%} {volume_util:<10.1%}")
         except Exception as e:
-            print(f"[ERROR] Failed to summarize Route {idx + 1}: {e}")
+            print(f"[ERROR] Route {idx + 1}: {e}")
 
-    print("=" * 110)
-    print(f"{'TOTAL':<10} {int(total_cust):<10} "
-          f"€{round(total_cost,2):<10} {total_dist:<10.1f} {total_in:<10.1f} "
-          f"€{total_toll:<10.2f} {total_dur:<10.1f} "
-          f"{'':<10} {avg_w:<10.1%} {avg_v:<10.1%}")
+    print("-" * len(header))
+    if route_count:
+        avg_w_util = sum_w_util / route_count
+        avg_v_util = sum_v_util / route_count
+    else:
+        avg_w_util = avg_v_util = 0.0
+
+    print(f"{'TOTAL':<8} {int(total_cust):<8} {total_dist:<8.1f} {total_in:<8.1f} {total_dur:<8.1f} {'':<6} "
+          f"€{total_cost:<9.2f} €{total_fixed:<9.2f} €{total_acq:<9.2f} €{total_fuel:<9.2f} "
+          f"€{total_maint:<9.2f} €{total_wage:<9.2f} €{total_toll:<9.2f} €{total_green:<9.2f} "
+          f"{avg_w_util:<10.1%} {avg_v_util:<10.1%}")
 
     resale_value = evaluation.compute_resale_value_for_unused_vehicles()
-    print(f"{'RESALE VALUE FOR UNUSED VEHICLES':<10} €{resale_value:.2f}")
+    print("=" * 170 + "\n")
+    print(f"{'RESALE VALUE FOR UNUSED VEHICLES':<60} €{resale_value:.2f}")
 
-    print("=" * 110)
 
 # def print_vt_id_and_routes(evaluation: rb_ext.CVRPEvaluation, solution: rb.Solution):
 #     for i, route in enumerate(solution.routes):
