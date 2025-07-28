@@ -58,10 +58,12 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
         # idx typ cnt vol pay_w acq_k€ cons_kWh cons_l max_rng maint_c
         (_, typ, cnt, vol, pay_w, acq, kwh, ltr, rng, maint) = ln.split()
         typ = typ.strip()
+        cnt = int(cnt)
 
-        fleets.append((typ,  float(vol), float(pay_w), float(acq),
-                        float(kwh), float(ltr), float(rng),
-                       float(maint)))
+        for _ in range(cnt):
+            fleets.append((typ,  float(vol), float(pay_w), float(acq),
+                            float(kwh), float(ltr), float(rng),
+                        float(maint)))
 
     fleet_sz = sum(int(ln.split()[2]) for ln in lines[fs_start:fs_end])
 
@@ -80,8 +82,10 @@ def parse_instance(instance_path: Path, *, return_fleets: bool = False) -> Insta
         # idx typ cnt vol pay_w acq_k€ cons_kWh cons_l max_rng maint_c
         (_, typ, cnt, vol, pay_w, acq, kwh, ltr, rng, maint) = ln.split()
         typ = typ.strip()
+        cnt = int(cnt)
 
-        initial_fleets.append((typ,  float(vol), float(pay_w), float(acq),
+        for _ in range(cnt):
+            initial_fleets.append((typ,  float(vol), float(pay_w), float(acq),
                         float(kwh), float(ltr), float(rng),
                        float(maint)))
 

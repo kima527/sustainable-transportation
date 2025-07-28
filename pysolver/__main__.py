@@ -64,6 +64,8 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
     sum_w_util = sum_v_util = 0.0
     route_count = 0
 
+    vehicle_types_used = []
+
     for idx, route in enumerate(routes):
         try:
             summary = evaluation.summarize_route(route)
@@ -74,6 +76,7 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
             dist_inside = summary["inside_km"]
             duration = summary["duration"] / 60
             vehicle_type = summary["vehicle_type"]
+            vehicle_types_used.append(vehicle_type)
 
             cost = summary["cost"]
             fixed_cost = summary.get("fixed_cost", 0.0)
@@ -124,7 +127,7 @@ def print_route_summary(py_instance, solution: rb.Solution, evaluation: rb_ext.H
           f"€{total_maint:<9.2f} €{total_wage:<9.2f} €{total_toll:<9.2f} €{total_green:<9.2f} "
           f"{avg_w_util:<10.1%} {avg_v_util:<10.1%}")
 
-    resale_value = evaluation.compute_resale_value_for_unused_vehicles()
+    resale_value = evaluation.compute_resale_value_for_unused_vehicles(vehicle_types_used)
     print("=" * 170 + "\n")
     print(f"{'RESALE VALUE FOR UNUSED VEHICLES':<60} €{resale_value:.2f}")
 
@@ -155,6 +158,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
 
     veh_props = [tuple(row) for row in fleets]
     initial_veh_props = [tuple(row) for row in initial_fleets]
+
     CityParams = namedtuple("CityParams",
                             ["utility_other", "maintenance_cost",
                              "price_elec", "price_diesel",
@@ -212,10 +216,9 @@ def main(instance_path: Path, output_path: Path, seed: int):
     #ls_engine.improve(lns_savings_solution)
     
     # 5. Solution
-    
     print_solution_info("ILS", ils_solution)
-
     print_route_summary(py_instance, ils_solution, evaluation, toll)
+
     # 6. metaheuristic (ALNS)
 
     # 7. custom operator (ALNS)

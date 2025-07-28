@@ -109,7 +109,6 @@ class HFVRPEvaluation
   // storing how many vehicles of each type are in the initial fleet
   std::unordered_map<std::string, int> _initial_fleet_count;
   // tracking how many vehicles of each type are used in the solution
-  mutable std::unordered_map<std::string, int> _vehicles_used;
 
   public:
     std::vector<std::string> _typ;
@@ -123,7 +122,7 @@ class HFVRPEvaluation
                       resource_t load_v,
                       resource_t work_t) const
     {
-        return _best_vehicle(dist, inside_km, load_w, load_v, work_t).first;
+        return _best_vehicle(dist, inside_km, load_w, load_v, work_t, true).first;
     }
 
   private:
@@ -209,11 +208,6 @@ class HFVRPEvaluation
             maint_km.push_back(t[7].cast<resource_t>());
         }
 
-        // initialize vehicles used to 0
-        for (const auto& row : _fleet) {
-            _vehicles_used[row.typ] = 0;
-        }
-
         /* ------- grab seven floats from the dict ---------------- */
         auto get = [&](const char* key, double dflt = 0.0) -> resource_t {
             return city.contains(key) ? city[key].cast<double>()
@@ -246,11 +240,8 @@ class HFVRPEvaluation
         c.amortized_acq_cost = 0.0;
         bool is_used_from_initial = false;
 
-        if (_initial_fleet_count.contains(veh_type) && _vehicles_used.at(veh_type) < _initial_fleet_count.at(veh_type)) {
-            // Use an owned vehicle
-            _vehicles_used[veh_type]++;
-            is_used_from_initial = true;
-        }
+        is_used_from_initial = (_initial_fleet_count.contains(veh_type) 
+                                && _initial_fleet_count.at(veh_type) > 0);
 
         // Normal case: purchase, depreciated over 4 years
         constexpr double RESALE_ICEV = 0.5;
@@ -306,13 +297,14 @@ class HFVRPEvaluation
     }
 
     std::pair<size_t, CostBreakdown>
-    _best_vehicle(resource_t d, resource_t in, resource_t w, resource_t v, resource_t t) const {
+    _best_vehicle(resource_t d, resource_t in, resource_t w, resource_t v, resource_t t, bool track_usage=true) const {
         size_t best = 0;
         CostBreakdown bestc = _compute_cost_for_vehicle_id(0, d, in, w, v, t, revenue, green_upside);
         for (size_t k = 1; k < num_veh; ++k) {
             CostBreakdown c = _compute_cost_for_vehicle_id(k, d, in, w, v, t, revenue, green_upside);
             if (c.total < bestc.total) { bestc = c; best = k; }
         }
+
         return {best, bestc};
     }
     
@@ -329,7 +321,7 @@ class HFVRPEvaluation
                                          f.inside_km+b.inside_km,
                                          f.load_weight+b.load_weight,
                                          f.load_volume+b.load_volume,
-                                         f.work_time +b.work_time).second.total;
+                                         f.work_time +b.work_time, false).second.total;
 
         cost_t fixed = pred.is_depot ? utility_other : 0.0;
         return var_cost + fixed;
@@ -338,7 +330,7 @@ class HFVRPEvaluation
     std::vector<resource_t>
     get_cost_components(const HFVRP_forward_label& f) const {
         auto k = _best_vehicle(f.distance, f.inside_km, f.load_weight,
-                               f.load_volume, f.work_time).first;
+                               f.load_volume, f.work_time, false).first;
         return {f.distance, f.inside_km,
                 std::max<resource_t>(0, f.distance   - _fleet[k].rng),
                 std::max<resource_t>(0, f.load_weight- _fleet[k].cap_w),
@@ -349,12 +341,12 @@ class HFVRPEvaluation
 
     cost_t compute_cost(const HFVRP_forward_label& f) const {
         return _best_vehicle(f.distance, f.inside_km, f.load_weight,
-                             f.load_volume, f.work_time).second.total;
+                             f.load_volume, f.work_time, false).second.total;
     }
 
     bool is_feasible(const HFVRP_forward_label& f) const {
         auto k = _best_vehicle(f.distance, f.inside_km, f.load_weight,
-                               f.load_volume, f.work_time).first;
+                               f.load_volume, f.work_time, false).first;
         return f.load_weight <= _fleet[k].cap_w && f.load_volume <= _fleet[k].cap_v
                && f.distance <= _fleet[k].rng   && f.work_time <= max_work_time;
     }
@@ -363,38 +355,39 @@ class HFVRPEvaluation
         const routingblocks::Route& r) const {
         const auto& f = r.end_depot().operator*().forward_label().get<HFVRP_forward_label>();
         return _best_vehicle(f.distance, f.inside_km, f.load_weight,
-                             f.load_volume, f.work_time).first;
+                             f.load_volume, f.work_time, false).first;
     }
 
-    cost_t compute_resale_value_for_unused_vehicles() const {
-        constexpr double RESALE_ICEV = 0.5;
-        constexpr double RESALE_BEV  = 0.45;
+    cost_t compute_resale_value_for_unused_vehicles(const std::vector<std::string>& vehicle_types_used) const {
+        std::unordered_map<std::string, int> used;
+    
+        for (const auto& typ : vehicle_types_used) {
+            used[typ]++;
+        }
     
         cost_t resale_value = 0.0;
-        for (const auto& [typ, initial_count] : _initial_fleet_count) {
-            int used = _vehicles_used[typ];
-            int unused = std::max(0, initial_count - used);
+        for (const auto& [typ, init_count] : _initial_fleet_count) {
+            int used_count = used.contains(typ) ? used.at(typ) : 0;
+            int unused = std::max(0, init_count - used_count);
     
             const auto& row = *std::find_if(_fleet.begin(), _fleet.end(), [&](const FleetRow& r) {
                 return r.typ == typ;
             });
     
-            double resale_rate = (typ == "I" || typ == "II" || typ == "III") ? RESALE_ICEV : RESALE_BEV;
+            double resale_rate = (typ == "I" || typ == "II" || typ == "III") ? 0.5 : 0.45;
             resale_value += unused * row.acq * resale_rate;
         }
         return resale_value;
     }
+    
 
     public:
         py::dict summarize_route(const routingblocks::Route& route) const {
             const auto& label = route.end_depot().operator*().forward_label().get<HFVRP_forward_label>();
-            auto vid = _best_vehicle(label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time).first;
+            auto vid = _best_vehicle(label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time, false).first;
             CostBreakdown c = _compute_cost_for_vehicle_id(vid, label.distance, label.inside_km, label.load_weight, label.load_volume, label.work_time, this->revenue, this->green_upside);
 
             cost_t fixed = (route.size() > 2) ? utility_other : 0.0;
-
-            const std::string& veh_type = _fleet[vid].typ;
-            const bool is_icev = (veh_type == "I" || veh_type == "II" || veh_type == "III");
 
             py::dict result;
             result["vehicle_type"] = _fleet[vid].typ;    // e.g. "I"
@@ -416,7 +409,6 @@ class HFVRPEvaluation
             result["green_upside_cost_discount"] = c.green_upside_cost_discount;
             return result;
         }
-
 
     /* ---- label propagation -------------------------------------------- */
 
