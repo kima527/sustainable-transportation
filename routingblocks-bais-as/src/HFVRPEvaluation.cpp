@@ -283,8 +283,8 @@ class HFVRPEvaluation
         // toll
         c.toll_cost = is_icev ? inside_km * toll_per_km_inside : 0.0;
 
-        // gree upside
-        c.green_upside_cost_discount = (num_initial_veh > 0)
+        // green upside
+        c.green_upside_cost_discount = (!is_icev && num_initial_veh > 0)
                                         ? (revenue * green_upside) / (WORKDAYS_PER_YEAR * num_initial_veh)
                                         : 0.0;
 
@@ -414,7 +414,6 @@ class HFVRPEvaluation
             result["capacity_volume"] = _fleet[vid].cap_v;
             result["inside_km"] = label.inside_km;
             result["toll_cost"] = c.toll_cost;
-            result["green_upside_cost_discount"] = c.green_upside_cost_discount;
             result["fuel_cost"] = c.fuel_cost;
             result["maint_cost"] = c.maint_cost;
             result["wage_cost"] = c.wage_cost;

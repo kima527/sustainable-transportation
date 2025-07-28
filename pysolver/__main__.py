@@ -203,7 +203,7 @@ def main(instance_path: Path, output_path: Path, seed: int):
     
     # 3. metaheuristic (LNS)
     evaluation.reset_free_vehicle_usage()
-    lns_savings_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 250)
+    lns_savings_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 2500)
     print_solution_info("LNS_savings", lns_savings_solution)
     
     # print_vt_id_and_routes(evaluation, lns_insertion_solution)

@@ -215,7 +215,7 @@ def _parse_city_info(raw_lines: list[str]) -> dict[str, float]:
         "semi-truck driver":         "wage_semi",
         "heavy-truck driver":        "wage_heavy",
         "revenue":                   "revenue",
-        "green upside":              "green_upside",
+        "green_upside":              "green_upside"
     }
 
     out: dict[str, float] = {}
