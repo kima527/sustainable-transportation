@@ -209,18 +209,18 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # print_vt_id_and_routes(evaluation, lns_insertion_solution)
 
     #ils_solution = lns_savings_solution
-
-    # ils_solution = iterative_local_search(py_instance, evaluation, cpp_instance, cpp_random, lns_savings_solution,  
-    #                                          max_iterations=50, perturbation_strength=10, ls_granularity=20)
+    evaluation.reset_free_vehicle_usage()
+    ils_solution = iterative_local_search(py_instance, evaluation, cpp_instance, cpp_random, lns_savings_solution,  
+                                              max_iterations=50, perturbation_strength=10, ls_granularity=20)
 
     # 4. improve solution (LS)
     #ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance, granularity=20)
     #ls_engine.improve(lns_savings_solution)
     
     # 5. Solution
-    # print_solution_info("ILS", ils_solution)
+    print_solution_info("ILS", ils_solution)
     evaluation.reset_free_vehicle_usage()
-    print_route_summary(py_instance, lns_savings_solution, evaluation, toll)
+    print_route_summary(py_instance, ils_solution, evaluation, toll)
 
     # 6. metaheuristic (ALNS)
 
@@ -229,8 +229,8 @@ def main(instance_path: Path, output_path: Path, seed: int):
     # 8. adapting routingblocks
 
     # draw something with colors
-    draw_routes(py_instance, [[v.vertex_id for v in route] for route in lns_savings_solution])
-    draw_routes_on_map(py_instance, [[v.vertex_id for v in route] for route in lns_savings_solution])
+    draw_routes(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
+    draw_routes_on_map(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
     
 if __name__ == '__main__':
     main()
