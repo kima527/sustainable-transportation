@@ -10,7 +10,8 @@ import math
 
 def lns(py_instance: Instance, evaluation: rb.Evaluation, cpp_instance: rb.Instance,
         cpp_random: rb.Random,
-        initial_solution: rb.Solution, max_iterations: int) -> rb.Solution:
+        initial_solution: rb.Solution, max_iterations: int, remove_fraction: float = 0.20,
+        destroy_weights: tuple[float, float, float] = (1.0, 0.0, 0.0)) -> rb.Solution:
 
     lns = rb.LargeNeighborhood(cpp_random)
 
@@ -36,7 +37,8 @@ def lns(py_instance: Instance, evaluation: rb.Evaluation, cpp_instance: rb.Insta
         )
     ]
 
-    destroy_weights = [1, 0, 0]
+    wsum = sum(destroy_weights)
+    destroy_weights = [w/wsum for w in destroy_weights] if wsum > 0 else [1.0, 0.0, 0.0]
 
     for operator in destroy_operators:
         lns.add_destroy_operator(operator)
@@ -52,7 +54,8 @@ def lns(py_instance: Instance, evaluation: rb.Evaluation, cpp_instance: rb.Insta
     for it in range(max_iterations):
         destroy_op = random.choices(destroy_operators, weights=destroy_weights, k=1)[0]
         new_solution = current_solution.copy()
-        num_removed = int(len(py_instance.vertices) * 0.1)
+        num_customers = len(py_instance.vertices) - 1
+        num_removed = max(1, int(num_customers * remove_fraction))
         destroy_op.apply(evaluation, new_solution, num_removed)
 
         vertex_ids = list(missing_customers(new_solution, len(py_instance.vertices)))

@@ -7,7 +7,7 @@ def iterative_local_search(
     rng,
     initial_solution: rb.Solution,
     max_iterations: int = 100,
-    perturbation_strength: int = 15,
+    remove_fraction: float = 0.1,
     ls_granularity: int = 20,
 ):
     
@@ -16,6 +16,8 @@ def iterative_local_search(
 
     best_solution = initial_solution.copy()
     
+    num_customers = len(py_instance.vertices) - 1
+    perturbation_strength = max(1, int(num_customers * remove_fraction))
     
     ls = CustomLocalSearch(py_instance, evaluation, cpp_instance, granularity=ls_granularity)
     best_solution = ls.improve(best_solution)

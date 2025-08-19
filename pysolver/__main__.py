@@ -8,6 +8,8 @@ import routingblocks as rb
 import routingblocks_bais_as as rb_ext
 from collections import namedtuple
 import folium
+import json
+from pathlib import Path
 
 from pysolver.construction.savings import savings
 from pysolver.construction.insertion import sequential_best_insertion
@@ -178,59 +180,54 @@ def main(instance_path: Path, output_path: Path, seed: int):
         p.revenue,
         p.green_upside
     )
-    toll = 0.4
+    toll = 0
     city = base_city._replace(toll_per_km_inside=toll)
+
+    cfg = load_cfg(Path("pysolver/finetuned_params.json"))
+    block = pick_block(instance_path, cfg)
+
+    s_cfg   = block.get("savings", {})
+    lns_cfg = block.get("lns", {})
+    ils_cfg = block.get("ils", {})
 
     evaluation = rb_ext.HFVRPEvaluation(veh_props, initial_veh_props, p.max_work_time, city._asdict())
 
-    # 0. check routingblocks working properly
-    # solution = generate_random_solution(py_instance, evaluation, instance)
-    # print(solution, solution.feasible)
-
-    # 1. create solution (savings)
+    # 1. Savings Construction
     evaluation.reset_free_vehicle_usage()
-    savings_solution = savings(py_instance, evaluation, cpp_instance)
-    print_solution_info("Savings", savings_solution)
-    #print_vt_id_and_routes(evaluation, savings_solution)
+    savings_solution = savings(py_instance, evaluation, cpp_instance, 
+                               max_customers_per_route=int(s_cfg.get("max_customers_per_route", 16)),
+                               min_saving=float(s_cfg.get("min_saving", 0.0)))
+    print_solution_info(f"Savings with max_customers_per_route {int(s_cfg.get("max_customers_per_route", 16))} ", savings_solution)
 
-    # 2. create solution (insertion)
-    #insertion_solution = sequential_best_insertion(py_instance, evaluation, cpp_instance)
-    #print_solution_info("Insertion", insertion_solution)
-    
-    # 2.1
-
-
-    
-    # 3. metaheuristic (LNS)
+    # 2. LNS
     evaluation.reset_free_vehicle_usage()
-    lns_savings_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 2500)
-    print_solution_info("LNS_savings", lns_savings_solution)
+    lns_savings_solution = lns(py_instance, evaluation, cpp_instance, cpp_random, savings_solution, 2500,
+                               remove_fraction=float(lns_cfg.get("destroy_fraction", 0.2)),
+                               destroy_weights=tuple(lns_cfg.get("destroy_weights", [1.0, 0.0, 0.0])))
+    print_solution_info(f"LNS with remove_fraction {float(lns_cfg.get("destroy_fraction", 0.2))}", lns_savings_solution)
     
-    # print_vt_id_and_routes(evaluation, lns_insertion_solution)
-
-    #ils_solution = lns_savings_solution
+    # 3. ILS
     evaluation.reset_free_vehicle_usage()
     ils_solution = iterative_local_search(py_instance, evaluation, cpp_instance, cpp_random, lns_savings_solution,  
-                                              max_iterations=50, perturbation_strength=10, ls_granularity=20)
+                                          max_iterations=int(ils_cfg.get("max_iterations", 50)),
+                                          remove_fraction=float(ils_cfg.get("destroy_fraction", 0.15)))
+    print_solution_info(f"ILS with remove_fraction {float(ils_cfg.get("destroy_fraction", 0.15))}", ils_solution)
 
-    # 4. improve solution (LS)
-    #ls_engine = CustomLocalSearch(py_instance, evaluation, cpp_instance, granularity=20)
-    #ls_engine.improve(lns_savings_solution)
-    
-    # 5. Solution
-    print_solution_info("ILS", ils_solution)
+    # 4. Solution
     evaluation.reset_free_vehicle_usage()
     print_route_summary(py_instance, ils_solution, evaluation, toll)
-
-    # 6. metaheuristic (ALNS)
-
-    # 7. custom operator (ALNS)
-
-    # 8. adapting routingblocks
 
     # draw something with colors
     draw_routes(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
     draw_routes_on_map(py_instance, [[v.vertex_id for v in route] for route in ils_solution])
-    
+
+def load_cfg(path: Path) -> dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def pick_block(instance_path: Path, cfg: dict) -> dict:
+    stem = instance_path.stem.lower()  # "newyork", "paris", "shanghai"
+    return cfg.get("instances", {}).get(stem, {})
+
 if __name__ == '__main__':
     main()
