@@ -1,44 +1,80 @@
-# Initial code base for the Live-Coding part of the BAIS Advanced Seminar
+# HFVRP Solver – BAIS Advanced Seminar
 
 ## Overview
 
-- `/pysolver` contains main access point, including the main file (`__main__.py`).
-- `/resources` contains the instances of the simple CVRP problem, which we will focus on. 
-- `/routingblocks-bais-as` is a local fork of the [native extension template](https://github.com/tumBAIS/routingblocks-native-extension-example) which we will use and modify.
-- `/RoutingBlocks-develop` is a clone of the [routingblocks repository](https://github.com/tumBAIS/routingblocks).
+This repository contains the code base developed for the **BAIS Advanced Seminar on Advanced Optimization**.  
+The goal of the project is to implement and evaluate a heuristic framework for solving **Heterogeneous Fleet Vehicle Routing Problems (HFVRP)** under realistic conditions.  
+Unlike simplified VRP benchmarks, this project integrates:
+
+- **Fleet heterogeneity** (ICEVs, BEVs, leased vehicles, initial fleets with sunk acquisition costs)  
+- **Detailed cost modeling** (fuel, electricity, maintenance, wages, tolls, amortized acquisition, penalties)  
+- **Policy scenarios** (urban toll regimes, green vehicle incentives, fleet restrictions)  
+- **Metaheuristic optimization** (Savings heuristic, Large Neighborhood Search, Iterated Local Search)  
+
+The framework is applied to realistic **case study instances** (Paris, New York, Shanghai) to analyze routing efficiency, fleet selection, and policy impacts.
+
+---
+
+## Repository Structure
+
+- `/pysolver`  
+  Main access point of the solver, including the driver script (`__main__.py`) and experiment logic (`main.py`).  
+  Handles instance loading, experiment setup, and integration with the C++ evaluation module.
+
+- `/resources`  
+  Contains benchmark instances.  
+  - Classical CVRP test sets (Augerat, etc.)  
+  - Extended HFVRP instances for Paris, New York, Shanghai (`.vrp` files with fleet/city configs and distance data).  
+
+- `/routingblocks-bais-as`  
+  Local fork of the [RoutingBlocks native extension template](https://github.com/tumBAIS/routingblocks-native-extension-example).  
+  Contains the custom **HFVRP evaluation module** (`evaluation.cpp`) that implements the cost function, feasibility checks, and vehicle assignment logic.
+
+- `/RoutingBlocks-develop`  
+  Clone of the [RoutingBlocks repository](https://github.com/tumBAIS/routingblocks).  
+  Provides the generic VRP framework and native C++ core used by our extension.
+
+---
 
 ## Getting Started
 
-- Install [Python](https://www.python.org/downloads/) (>=3.11)
+### Requirements
+
+- [Python](https://www.python.org/downloads/) >= 3.11  
+- `cmake` and a working C++ compiler toolchain (see platform-specific instructions below)  
 
 ### For Windows Users
-- Install `cmake` (link: https://cmake.org/download/) and make sure `cmake` is in your system PATH (it should be like: C:\Users\username\cmake-3.31.2-windows-x86_64\bin)
-- Run `cmake --version` to confirm you have installed successfully
-- Install `C++ compiler` (e.g. [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)  )
-- [Link](https://stackoverflow.com/questions/69338088/error-while-configuring-cmake-project-running-nmake-failed) to a possible error you may get -- make sure you successfully followed the steps above
+1. Install [CMake](https://cmake.org/download/) and add it to your system PATH.  
+   - Test with: `cmake --version`  
+2. Install a C++ compiler (e.g. [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)).  
+3. If you run into issues during build, see [this StackOverflow post](https://stackoverflow.com/questions/69338088/error-while-configuring-cmake-project-running-nmake-failed).  
 
 ### For Mac Users
-- Install `xcode`
-  - Open the terminal and run `xcode-select --install`  
-  - A dialog will pop up asking you to install the command line tools. Accept and follow the prompts.   
-  - Once installed, you can check for successful installation with `clang --version`
-- Install `cmake`  
-  - Still in the teminal, run `brew install cmake`  
-  - Once installed, you can check for successful installation with `cmake --version`
-  
-- Make sure the plot can be visualized as well:  In PyCharm, go to *Preferences → Tools → Python Scientific* and uncheck "Show plots in tool window"
+1. Install Xcode command line tools:  
+   ```bash
+   xcode-select --install
+2. Install CMAKE vis homebrew:
+   ```bash
+   brew install cmake
 
-Run the following commands in the terminal in the root folder of this project:
-- `pip install -e RoutingBlocks-develop` (install routingblocks for development)
-- `pip install -e routingblocks-bais-as` (install extension)
-- `pip install -r pysolver/requirements.txt` (install other packages)
-- `python -m pysolver ./resources/instances/Augerat/A-n32-k5.vrp` (run solver)
+### Installation
 
-- `python -m pysolver ./resources/instances/test_instances/paris.vrp` (run paris instances)
-- `python -m pysolver ./resources/instances/test_instances/newyork.vrp` (run newy ork instances)
-- `python -m pysolver ./resources/instances/test_instances/shanghai.vrp` (run shanghai instances)
+Install routingblocks core
+- pip install -e RoutingBlocks-develop
 
+Install HFVRP evaluation extension
+- pip install -e routingblocks-bais-as
 
+Install Python dependencies
+- pip install -r pysolver/requirements.txt
 
-# Link to excel solver documentation
-https://www.sciencedirect.com/science/article/pii/S0305054817300552
+## Running the Solver
+
+### Classical CVRP benchmark
+python -m pysolver ./resources/instances/Augerat/A-n32-k5.vrp
+
+### HFVRP case study instances
+- python -m pysolver ./resources/instances/test_instances/paris.vrp
+- python -m pysolver ./resources/instances/test_instances/newyork.vrp
+- python -m pysolver ./resources/instances/test_instances/shanghai.vrp
+
